@@ -76,15 +76,20 @@ export function usePushNotifications() {
         throw new Error("Debes iniciar sesión para activar notificaciones");
       }
 
+      // ✅ FIX: Borrar suscripciones previas del usuario antes de insertar
+      // Esto evita filas duplicadas y zombies
+      await supabase
+        .from("push_subscriptions")
+        .delete()
+        .eq("user_id", user.id);
+
+      // ✅ FIX: Insertar la nueva suscripción (sin upsert)
       const { error: dbError } = await supabase
         .from("push_subscriptions")
-        .upsert(
-          {
-            user_id: user.id,
-            subscription: subscription.toJSON(),
-          },
-          { onConflict: "user_id,subscription" }
-        );
+        .insert({
+          user_id: user.id,
+          subscription: subscription.toJSON(),
+        });
 
       if (dbError) throw dbError;
 
@@ -114,11 +119,12 @@ export function usePushNotifications() {
         } = await supabase.auth.getUser();
 
         if (user) {
+          // ✅ FIX: Borrar TODAS las suscripciones del usuario
+          // (ya no filtramos por subscription que no funciona con jsonb)
           await supabase
             .from("push_subscriptions")
             .delete()
-            .eq("user_id", user.id)
-            .eq("subscription", subscription.toJSON());
+            .eq("user_id", user.id);
         }
       }
 

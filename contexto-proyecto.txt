@@ -1,0 +1,1072 @@
+=== package.json ===
+{
+  "name": "biblia-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@serwist/next": "^9.5.12",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.468.0",
+    "next": "16.3.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "shadcn": "^4.21.0",
+    "sonner": "^2.0.8",
+    "tailwind-merge": "^2.5.5",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^18.0.3",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "serwist": "^9.5.12",
+    "supabase": "^2.117.0",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  }
+}
+
+=== next.config.ts ===
+import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+  workboxOptions: {
+    disableDevLogs: true,
+  },
+  customWorkerSrc: "worker",
+});
+
+const nextConfig: NextConfig = {};
+
+export default withPWA(nextConfig);
+=== lib/bible-api.ts ===
+const BASE = "https://api.midvash.com/v1";
+
+export const VERSIONS = {
+  rvr1960: { name: "Reina Valera 1960", shortName: "RVR1960" },
+  nvi:     { name: "Nueva Versión Internacional", shortName: "NVI" },
+  ntv:     { name: "Nueva Traducción Viviente", shortName: "NTV" },
+} as const;
+
+export type VersionKey = keyof typeof VERSIONS;
+
+export interface Verse {
+  verse: number;
+  text: string;
+}
+
+export interface ChapterData {
+  version: string;
+  book: string;
+  bookName: string;
+  chapter: number;
+  reference: string;
+  verses: Verse[];
+}
+
+export const BOOKS = [
+  // Antiguo Testamento
+  { slug: "genesis", name: "Génesis", testament: "OT", chapters: 50 },
+  { slug: "exodo", name: "Éxodo", testament: "OT", chapters: 40 },
+  { slug: "levitico", name: "Levítico", testament: "OT", chapters: 27 },
+  { slug: "numeros", name: "Números", testament: "OT", chapters: 36 },
+  { slug: "deuteronomio", name: "Deuteronomio", testament: "OT", chapters: 34 },
+  { slug: "josue", name: "Josué", testament: "OT", chapters: 24 },
+  { slug: "jueces", name: "Jueces", testament: "OT", chapters: 21 },
+  { slug: "rut", name: "Rut", testament: "OT", chapters: 4 },
+  { slug: "1-samuel", name: "1 Samuel", testament: "OT", chapters: 31 },
+  { slug: "2-samuel", name: "2 Samuel", testament: "OT", chapters: 24 },
+  { slug: "1-reyes", name: "1 Reyes", testament: "OT", chapters: 22 },
+  { slug: "2-reyes", name: "2 Reyes", testament: "OT", chapters: 25 },
+  { slug: "1-cronicas", name: "1 Crónicas", testament: "OT", chapters: 29 },
+  { slug: "2-cronicas", name: "2 Crónicas", testament: "OT", chapters: 36 },
+  { slug: "esdras", name: "Esdras", testament: "OT", chapters: 10 },
+  { slug: "nehemias", name: "Nehemías", testament: "OT", chapters: 13 },
+  { slug: "ester", name: "Ester", testament: "OT", chapters: 10 },
+  { slug: "job", name: "Job", testament: "OT", chapters: 42 },
+  { slug: "salmos", name: "Salmos", testament: "OT", chapters: 150 },
+  { slug: "proverbios", name: "Proverbios", testament: "OT", chapters: 31 },
+  { slug: "eclesiastes", name: "Eclesiastés", testament: "OT", chapters: 12 },
+  { slug: "cantares", name: "Cantares", testament: "OT", chapters: 8 },
+  { slug: "isaias", name: "Isaías", testament: "OT", chapters: 66 },
+  { slug: "jeremias", name: "Jeremías", testament: "OT", chapters: 52 },
+  { slug: "lamentaciones", name: "Lamentaciones", testament: "OT", chapters: 5 },
+  { slug: "ezequiel", name: "Ezequiel", testament: "OT", chapters: 48 },
+  { slug: "daniel", name: "Daniel", testament: "OT", chapters: 12 },
+  { slug: "oseas", name: "Oseas", testament: "OT", chapters: 14 },
+  { slug: "joel", name: "Joel", testament: "OT", chapters: 3 },
+  { slug: "amos", name: "Amós", testament: "OT", chapters: 9 },
+  { slug: "abdias", name: "Obadías", testament: "OT", chapters: 1 },
+  { slug: "jonas", name: "Jonás", testament: "OT", chapters: 4 },
+  { slug: "miqueas", name: "Miqueas", testament: "OT", chapters: 7 },
+  { slug: "nahum", name: "Nahúm", testament: "OT", chapters: 3 },
+  { slug: "habacuc", name: "Habacuc", testament: "OT", chapters: 3 },
+  { slug: "sofonias", name: "Sofonías", testament: "OT", chapters: 3 },
+  { slug: "hageo", name: "Hageo", testament: "OT", chapters: 2 },
+  { slug: "zacarias", name: "Zacarías", testament: "OT", chapters: 14 },
+  { slug: "malaquias", name: "Malaquías", testament: "OT", chapters: 4 },
+  // Nuevo Testamento
+  { slug: "mateo", name: "Mateo", testament: "NT", chapters: 28 },
+  { slug: "marcos", name: "Marcos", testament: "NT", chapters: 16 },
+  { slug: "lucas", name: "Lucas", testament: "NT", chapters: 24 },
+  { slug: "juan", name: "Juan", testament: "NT", chapters: 21 },
+  { slug: "hechos", name: "Hechos", testament: "NT", chapters: 28 },
+  { slug: "romanos", name: "Romanos", testament: "NT", chapters: 16 },
+  { slug: "1-corintios", name: "1 Corintios", testament: "NT", chapters: 16 },
+  { slug: "2-corintios", name: "2 Corintios", testament: "NT", chapters: 13 },
+  { slug: "galatas", name: "Gálatas", testament: "NT", chapters: 6 },
+  { slug: "efesios", name: "Efesios", testament: "NT", chapters: 6 },
+  { slug: "filipenses", name: "Filipenses", testament: "NT", chapters: 4 },
+  { slug: "colosenses", name: "Colosenses", testament: "NT", chapters: 4 },
+  { slug: "1-tesalonicenses", name: "1 Tesalonicenses", testament: "NT", chapters: 5 },
+  { slug: "2-tesalonicenses", name: "2 Tesalonicenses", testament: "NT", chapters: 3 },
+  { slug: "1-timoteo", name: "1 Timoteo", testament: "NT", chapters: 6 },
+  { slug: "2-timoteo", name: "2 Timoteo", testament: "NT", chapters: 4 },
+  { slug: "tito", name: "Tito", testament: "NT", chapters: 3 },
+  { slug: "filemon", name: "Filemón", testament: "NT", chapters: 1 },
+  { slug: "hebreos", name: "Hebreos", testament: "NT", chapters: 13 },
+  { slug: "santiago", name: "Santiago", testament: "NT", chapters: 5 },
+  { slug: "1-pedro", name: "1 Pedro", testament: "NT", chapters: 5 },
+  { slug: "2-pedro", name: "2 Pedro", testament: "NT", chapters: 3 },
+  { slug: "1-juan", name: "1 Juan", testament: "NT", chapters: 5 },
+  { slug: "2-juan", name: "2 Juan", testament: "NT", chapters: 1 },
+  { slug: "3-juan", name: "3 Juan", testament: "NT", chapters: 1 },
+  { slug: "judas", name: "Judas", testament: "NT", chapters: 1 },
+  { slug: "apocalipsis", name: "Apocalipsis", testament: "NT", chapters: 22 },
+] as const;
+
+export type BookSlug = (typeof BOOKS)[number]["slug"];
+
+export function getBook(slug: string) {
+  return BOOKS.find((b) => b.slug === slug);
+}
+
+export async function getChapter(
+  version: VersionKey,
+  book: string,
+  chapter: number
+): Promise<ChapterData> {
+  const url = `${BASE}/${version}/${book}/${chapter}`;
+  const res = await fetch(url, { next: { revalidate: 86400 } });
+  if (!res.ok) throw new Error(`No se pudo cargar ${book} ${chapter}`);
+
+  const json = await res.json();
+  const raw = json.data;
+
+  // Midvash devuelve `verses` como array de strings (una por versículo)
+  const verses: Verse[] = (raw.verses as string[]).map((text, i) => ({
+    verse: i + 1,
+    text,
+  }));
+
+  return {
+    version: raw.version,
+    book: raw.book,
+    bookName: raw.bookName,
+    chapter: raw.chapter,
+    reference: json.meta?.reference ?? `${raw.bookName} ${raw.chapter}`,
+    verses,
+  };
+}
+=== lib/supabase/notes-actions.ts ===
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+
+export interface Note {
+  id: string;
+  user_id: string;
+  book: string;
+  chapter: number;
+  verse: number | null;
+  content: string | null;
+  color: string | null;
+  created_at: string;
+}
+
+export async function getNotesForChapter(
+  book: string,
+  chapter: number
+): Promise<Note[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("notes")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("book", book)
+    .eq("chapter", chapter);
+
+  if (error) {
+    console.error("Error cargando notas:", error);
+    return [];
+  }
+  return data as Note[];
+}
+
+export async function getAllNotes(): Promise<Note[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("notes")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) return [];
+  return data as Note[];
+}
+
+export async function upsertHighlight(
+  book: string,
+  chapter: number,
+  verse: number,
+  color: string | null
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No autenticado");
+
+  // Buscar si ya existe un highlight para ese versículo
+  const { data: existing } = await supabase
+    .from("notes")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("book", book)
+    .eq("chapter", chapter)
+    .eq("verse", verse)
+    .maybeSingle();
+
+  if (existing) {
+    if (color === null) {
+      // Quitar resaltado → eliminar la nota si no tiene contenido
+      await supabase
+        .from("notes")
+        .delete()
+        .eq("id", existing.id);
+    } else {
+      await supabase
+        .from("notes")
+        .update({ color })
+        .eq("id", existing.id);
+    }
+  } else if (color !== null) {
+    await supabase.from("notes").insert({
+      user_id: user.id,
+      book,
+      chapter,
+      verse,
+      color,
+    });
+  }
+
+  revalidatePath(`/leer/${book}/${chapter}`);
+}
+
+export async function upsertNote(
+  book: string,
+  chapter: number,
+  verse: number,
+  content: string
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No autenticado");
+
+  const { data: existing } = await supabase
+    .from("notes")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("book", book)
+    .eq("chapter", chapter)
+    .eq("verse", verse)
+    .maybeSingle();
+
+  if (existing) {
+    if (content.trim() === "") {
+      // Si no hay color ni contenido, borrar
+      const { data: full } = await supabase
+        .from("notes")
+        .select("color")
+        .eq("id", existing.id)
+        .single();
+      if (!full?.color) {
+        await supabase.from("notes").delete().eq("id", existing.id);
+      } else {
+        await supabase
+          .from("notes")
+          .update({ content: null })
+          .eq("id", existing.id);
+      }
+    } else {
+      await supabase
+        .from("notes")
+        .update({ content })
+        .eq("id", existing.id);
+    }
+  } else {
+    if (content.trim() !== "") {
+      await supabase.from("notes").insert({
+        user_id: user.id,
+        book,
+        chapter,
+        verse,
+        content,
+      });
+    }
+  }
+
+  revalidatePath(`/leer/${book}/${chapter}`);
+}
+
+export async function deleteNote(id: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No autenticado");
+
+  await supabase.from("notes").delete().eq("id", id).eq("user_id", user.id);
+  revalidatePath("/notas");
+}
+=== lib/supabase/plans-actions.ts ===
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+
+export interface ReadingPlan {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  total_days: number;
+}
+
+export interface PlanDay {
+  id: string;
+  plan_id: string;
+  day_number: number;
+  passages: Array<{ book: string; chapter: number }>;
+}
+
+export interface UserPlan {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  started_at: string;
+  completed_days: number[];
+}
+
+export async function getAllPlans(): Promise<ReadingPlan[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("reading_plans")
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error) return [];
+  return data as ReadingPlan[];
+}
+
+export async function getPlanBySlug(slug: string) {
+  const supabase = await createClient();
+  const { data: plan, error: planError } = await supabase
+    .from("reading_plans")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  console.log("🔍 getPlanBySlug → slug:", slug);
+  console.log("🔍 getPlanBySlug → plan:", plan);
+  console.log("🔍 getPlanBySlug → planError:", planError);
+
+  if (!plan) return null;
+
+  const { data: days, error: daysError } = await supabase
+    .from("plan_days")
+    .select("*")
+    .eq("plan_id", plan.id)
+    .order("day_number", { ascending: true });
+
+  console.log("🔍 getPlanBySlug → days count:", days?.length);
+  console.log("🔍 getPlanBySlug → daysError:", daysError);
+
+  return {
+    plan: plan as ReadingPlan,
+    days: (days ?? []) as PlanDay[],
+  };
+}
+
+export async function getUserPlan(planId: string): Promise<UserPlan | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("user_plans")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("plan_id", planId)
+    .maybeSingle();
+
+  return data as UserPlan | null;
+}
+
+export async function startPlan(planId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No autenticado");
+
+  const { data: existing } = await supabase
+    .from("user_plans")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("plan_id", planId)
+    .maybeSingle();
+
+  if (!existing) {
+    await supabase.from("user_plans").insert({
+      user_id: user.id,
+      plan_id: planId,
+      completed_days: [],
+    });
+  }
+
+  revalidatePath("/plan");
+}
+
+export async function toggleDayCompleted(planId: string, dayNumber: number) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No autenticado");
+
+  const { data: userPlan } = await supabase
+    .from("user_plans")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("plan_id", planId)
+    .maybeSingle();
+
+  if (!userPlan) throw new Error("Plan no iniciado");
+
+  const completed: number[] = userPlan.completed_days ?? [];
+  const isCompleted = completed.includes(dayNumber);
+  const newCompleted = isCompleted
+    ? completed.filter((d) => d !== dayNumber)
+    : [...completed, dayNumber].sort((a, b) => a - b);
+
+  await supabase
+    .from("user_plans")
+    .update({ completed_days: newCompleted })
+    .eq("id", userPlan.id);
+
+  revalidatePath("/plan");
+}
+=== lib/supabase/stats-actions.ts ===
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+
+export interface ReadingStats {
+  currentStreak: number;
+  longestStreak: number;
+  totalDaysRead: number;
+  last30DaysCount: number;
+  todayRead: boolean;
+}
+
+/**
+ * Registra que el usuario leyó un capítulo hoy.
+ * Se llama automáticamente desde ReadingTracker.
+ */
+export async function recordReadingActivity() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const today = new Date().toISOString().split("T")[0];
+
+  // Upsert: si ya existe el registro de hoy, incrementa chapters_read
+  const { data: existing } = await supabase
+    .from("reading_activity")
+    .select("id, chapters_read")
+    .eq("user_id", user.id)
+    .eq("activity_date", today)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase
+      .from("reading_activity")
+      .update({ chapters_read: (existing.chapters_read ?? 0) + 1 })
+      .eq("id", existing.id);
+  } else {
+    await supabase.from("reading_activity").insert({
+      user_id: user.id,
+      activity_date: today,
+      chapters_read: 1,
+    });
+  }
+}
+
+export async function getReadingStats(): Promise<ReadingStats> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const empty: ReadingStats = {
+    currentStreak: 0,
+    longestStreak: 0,
+    totalDaysRead: 0,
+    last30DaysCount: 0,
+    todayRead: false,
+  };
+
+  if (!user) return empty;
+
+  // Obtener todas las fechas de actividad, ordenadas descendente
+  const { data: activities } = await supabase
+    .from("reading_activity")
+    .select("activity_date")
+    .eq("user_id", user.id)
+    .order("activity_date", { ascending: false });
+
+  if (!activities || activities.length === 0) return empty;
+
+  const dates = activities.map((a) => a.activity_date);
+
+  // Racha actual: contar días consecutivos desde hoy o ayer
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const todayStr = today.toISOString().split("T")[0];
+  const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+  const todayRead = dates.includes(todayStr);
+  const startFrom = todayRead ? todayStr : yesterdayStr;
+
+  let currentStreak = 0;
+  if (dates.includes(startFrom)) {
+    const checkDate = new Date(startFrom);
+    while (true) {
+      const dateStr = checkDate.toISOString().split("T")[0];
+      if (dates.includes(dateStr)) {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+  }
+
+  // Racha máxima: recorrer todas las fechas ordenadas
+  let longestStreak = 0;
+  let tempStreak = 0;
+  let prevDate: Date | null = null;
+
+  const sortedAsc = [...dates].sort();
+  for (const dateStr of sortedAsc) {
+    const date = new Date(dateStr);
+    if (prevDate === null) {
+      tempStreak = 1;
+    } else {
+      const diffDays = Math.round(
+        (date.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (diffDays === 1) {
+        tempStreak++;
+      } else {
+        longestStreak = Math.max(longestStreak, tempStreak);
+        tempStreak = 1;
+      }
+    }
+    prevDate = date;
+  }
+  longestStreak = Math.max(longestStreak, tempStreak);
+
+  // Últimos 30 días
+  const thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
+  const last30DaysCount = dates.filter((d) => d >= thirtyDaysAgoStr).length;
+
+  return {
+    currentStreak,
+    longestStreak,
+    totalDaysRead: dates.length,
+    last30DaysCount,
+    todayRead,
+  };
+}
+=== components/bible/VerseActions.tsx ===
+"use client";
+
+import { useState, useTransition } from "react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { StickyNote, X, Share2, Copy, Image as ImageIcon } from "lucide-react";
+import { upsertHighlight, upsertNote } from "@/lib/supabase/notes-actions";
+import { ShareImageDialog } from "./ShareImageDialog";
+
+const COLORS = [
+  { name: "Amarillo", value: "yellow", class: "bg-yellow-300" },
+  { name: "Verde", value: "green", class: "bg-green-300" },
+  { name: "Azul", value: "blue", class: "bg-blue-300" },
+  { name: "Rosa", value: "pink", class: "bg-pink-300" },
+];
+
+interface VerseActionsProps {
+  book: string;
+  bookName: string;
+  chapter: number;
+  verse: number;
+  verseText: string;
+  currentColor: string | null;
+  currentNote: string | null;
+  isAuthenticated: boolean;
+  children: React.ReactNode;
+}
+
+export function VerseActions({
+  book,
+  bookName,
+  chapter,
+  verse,
+  verseText,
+  currentColor,
+  currentNote,
+  isAuthenticated,
+  children,
+}: VerseActionsProps) {
+  const [open, setOpen] = useState(false);
+  const [noteText, setNoteText] = useState(currentNote ?? "");
+  const [isPending, startTransition] = useTransition();
+  const [mode, setMode] = useState<"menu" | "note">("menu");
+  const [copied, setCopied] = useState(false);
+  const [shareImageOpen, setShareImageOpen] = useState(false);
+
+  const reference = `${bookName} ${chapter}:${verse}`;
+
+  const handleHighlight = (color: string | null) => {
+    startTransition(async () => {
+      await upsertHighlight(book, chapter, verse, color);
+      setOpen(false);
+    });
+  };
+
+  const handleSaveNote = () => {
+    startTransition(async () => {
+      await upsertNote(book, chapter, verse, noteText);
+      setOpen(false);
+      setMode("menu");
+    });
+  };
+
+  const buildShareText = () => {
+    return `"${verseText}"\n\n— ${reference} (RVR1960)`;
+  };
+
+  const buildShareUrl = () => {
+    if (typeof window === "undefined") return "";
+    return `${window.location.origin}/v/${book}/${chapter}/${verse}`;
+  };
+
+  const handleNativeShare = async () => {
+    const url = buildShareUrl();
+    const text = buildShareText();
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: reference, text, url });
+        setOpen(false);
+      } catch {
+        // Usuario canceló
+      }
+    } else {
+      await handleCopyLink();
+    }
+  };
+
+  const handleCopyLink = async () => {
+    const url = buildShareUrl();
+    const text = `${buildShareText()}\n\n${url}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Error copiando:", err);
+    }
+  };
+
+  return (
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          nativeButton={false}
+          render={
+            <span
+              role="button"
+              tabIndex={0}
+              className="cursor-pointer hover:bg-accent/50 rounded transition-colors block w-full text-left focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          }
+        >
+          {children}
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-[calc(100vw-2rem)] max-w-xs sm:w-72 max-h-[70vh] overflow-y-auto p-3"
+          align="center"
+          side="bottom"
+          sideOffset={8}
+          alignOffset={0}
+          collisionPadding={16}
+        >
+          {mode === "menu" ? (
+            <div className="space-y-3">
+              {isAuthenticated && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    Resaltar
+                  </p>
+                  <div className="flex gap-2">
+                    {COLORS.map((c) => (
+                      <button
+                        key={c.value}
+                        onClick={() => handleHighlight(c.value)}
+                        disabled={isPending}
+                        className={`h-8 w-8 rounded-full border-2 ${c.class} ${
+                          currentColor === c.value
+                            ? "border-foreground"
+                            : "border-transparent"
+                        } transition-all hover:scale-110`}
+                        title={c.name}
+                      />
+                    ))}
+                    {currentColor && (
+                      <button
+                        onClick={() => handleHighlight(null)}
+                        disabled={isPending}
+                        className="h-8 w-8 rounded-full border border-dashed flex items-center justify-center hover:bg-accent"
+                        title="Quitar resaltado"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {isAuthenticated && (
+                <div className="border-t pt-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-2"
+                    onClick={() => setMode("note")}
+                  >
+                    <StickyNote className="h-4 w-4" />
+                    {currentNote ? "Editar nota" : "Agregar nota"}
+                  </Button>
+                </div>
+              )}
+
+              <div className="border-t pt-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  Compartir
+                </p>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start gap-2"
+                  onClick={handleNativeShare}
+                >
+                  <Share2 className="h-4 w-4" />
+                  Compartir
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start gap-2"
+                  onClick={handleCopyLink}
+                >
+                  <Copy className="h-4 w-4" />
+                  {copied ? "¡Copiado!" : "Copiar link"}
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start gap-2"
+                  onClick={() => {
+                    setShareImageOpen(true);
+                    setOpen(false);
+                  }}
+                >
+                  <ImageIcon className="h-4 w-4" />
+                  Crear imagen
+                </Button>
+              </div>
+
+              {currentNote && (
+                <div className="border-t pt-3">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Nota actual:
+                  </p>
+                  <p className="text-sm italic line-clamp-3">{currentNote}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder="Escribe tu nota..."
+                rows={4}
+                autoFocus
+              />
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setMode("menu");
+                    setNoteText(currentNote ?? "");
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button size="sm" onClick={handleSaveNote} disabled={isPending}>
+                  {isPending ? "Guardando..." : "Guardar"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+
+      <ShareImageDialog
+        open={shareImageOpen}
+        onOpenChange={setShareImageOpen}
+        reference={reference}
+        verseText={verseText}
+      />
+    </>
+  );
+}
+
+=== components/bible/VerseList.tsx ===
+"use client";
+
+import { useEffect, useState } from "react";
+import type { Verse } from "@/lib/bible-api";
+import type { Note } from "@/lib/supabase/notes-actions";
+import { VerseActions } from "./VerseActions";
+import { useFontSize } from "@/lib/hooks/use-font-size";
+
+const COLOR_CLASSES: Record<string, string> = {
+  yellow: "bg-yellow-200/60 dark:bg-yellow-900/30",
+  green: "bg-green-200/60 dark:bg-green-900/30",
+  blue: "bg-blue-200/60 dark:bg-blue-900/30",
+  pink: "bg-pink-200/60 dark:bg-pink-900/30",
+};
+
+interface VerseListProps {
+  verses: Verse[];
+  book: string;
+  bookName: string;
+  chapter: number;
+  notes: Note[];
+  isAuthenticated: boolean;
+}
+
+export function VerseList({
+  verses,
+  book,
+  bookName,
+  chapter,
+  notes,
+  isAuthenticated,
+}: VerseListProps) {
+  const { fontSizeClass, mounted } = useFontSize();
+
+  const notesByVerse = new Map<number, Note>();
+  for (const n of notes) {
+    if (n.verse !== null) notesByVerse.set(n.verse, n);
+  }
+
+  // Usar clase por defecto si aún no montó (evita hydration mismatch)
+  const textClass = mounted
+    ? fontSizeClass
+    : "text-base sm:text-lg leading-[1.8] sm:leading-[1.9]";
+
+  return (
+    <div className="space-y-3">
+      {verses.map((v) => {
+        const note = notesByVerse.get(v.verse);
+        const colorClass = note?.color ? COLOR_CLASSES[note.color] ?? "" : "";
+
+        return (
+          <VerseActions
+            key={v.verse}
+            book={book}
+            bookName={bookName}
+            chapter={chapter}
+            verse={v.verse}
+            verseText={v.text}
+            currentColor={note?.color ?? null}
+            currentNote={note?.content ?? null}
+            isAuthenticated={isAuthenticated}
+          >
+            <p
+              id={`v${v.verse}`}
+              className={`${textClass} tracking-[0.01em] text-foreground/90 rounded px-2 py-1 -mx-2 ${colorClass}`}
+            >
+              <sup className="mr-2 text-xs font-semibold text-primary align-super select-none">
+                {v.verse}
+              </sup>
+              {v.text}
+              {note?.content && (
+                <span className="ml-2 inline-block rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground align-middle">
+                  nota
+                </span>
+              )}
+            </p>
+          </VerseActions>
+        );
+      })}
+    </div>
+  );
+}
+=== Estructura de archivos ===
+app/auth/callback/route.ts
+app/auth/signin/[provider]/route.ts
+app/estadisticas/page.tsx
+app/layout.tsx
+app/leer/[book]/[chapter]/loading.tsx
+app/leer/[book]/[chapter]/page.tsx
+app/leer/page.tsx
+app/loading.tsx
+app/login/page.tsx
+app/manifest.ts
+app/notas/loading.tsx
+app/notas/page.tsx
+app/page.tsx
+app/perfil/loading.tsx
+app/perfil/page.tsx
+app/plan/[slug]/loading.tsx
+app/plan/[slug]/page.tsx
+app/planes/loading.tsx
+app/planes/page.tsx
+app/v/[book]/[chapter]/[verse]/page.tsx
+components/bible/BookSelector.tsx
+components/bible/ChapterNav.tsx
+components/bible/ChapterSelector.tsx
+components/bible/FocusModeExit.tsx
+components/bible/FocusModeLayout.tsx
+components/bible/FocusModeToggle.tsx
+components/bible/FontSizeControl.tsx
+components/bible/KeyboardShortcutsHandler.tsx
+components/bible/KeyboardShortcutsHelp.tsx
+components/bible/ReadingTracker.tsx
+components/bible/ShareImageDialog.tsx
+components/bible/VerseActions.tsx
+components/bible/VerseList.tsx
+components/bible/VersionSelector.tsx
+components/home/ActivePlanCard.tsx
+components/home/ContinueReadingCard.tsx
+components/home/VerseOfDayCard.tsx
+components/layout/ThemeToggle.tsx
+components/layout/UserNav.tsx
+components/plan/PlanDayCard.tsx
+components/plan/PlanDaysList.tsx
+components/plan/PlanProgress.tsx
+components/profile/PushNotificationToggle.tsx
+components/providers/ThemeProvider.tsx
+components/pwa/PWAInstallPrompt.tsx
+components/stats/StatsCard.tsx
+components/stats/StreakBadge.tsx
+components/ui/avatar.tsx
+components/ui/badge.tsx
+components/ui/button.tsx
+components/ui/card.tsx
+components/ui/dialog.tsx
+components/ui/dropdown-menu.tsx
+components/ui/input.tsx
+components/ui/label.tsx
+components/ui/popover.tsx
+components/ui/scroll-area.tsx
+components/ui/select.tsx
+components/ui/separator.tsx
+components/ui/skeleton.tsx
+components/ui/sonner.tsx
+components/ui/tabs.tsx
+components/ui/textarea.tsx
+lib/bible-api.ts
+lib/hooks/use-focus-mode.ts
+lib/hooks/use-font-size.ts
+lib/hooks/use-keyboard-shortcuts.ts
+lib/hooks/use-push-notifications.ts
+lib/reading-history.ts
+lib/supabase/auth-actions.ts
+lib/supabase/client.ts
+lib/supabase/middleware.ts
+lib/supabase/notes-actions.ts
+lib/supabase/plans-actions.ts
+lib/supabase/server.ts
+lib/supabase/stats-actions.ts
+lib/utils.ts
+lib/verse-of-day.ts
