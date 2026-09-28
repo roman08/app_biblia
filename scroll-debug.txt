@@ -1,0 +1,795 @@
+=== app/layout.tsx ===
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
+import "./globals.css";
+import { UserNav } from "@/components/layout/UserNav";
+import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: {
+    default: "Biblia App",
+    template: "%s · Biblia App",
+  },
+  description: "Lee, medita y estudia la Palabra de Dios",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Biblia",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/icon-152.png", sizes: "152x152", type: "image/png" },
+    ],
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F8FAFC" },
+    { media: "(prefers-color-scheme: dark)", color: "#0F172A" },
+  ],
+  viewportFit: "cover",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="es" suppressHydrationWarning data-scroll-behavior="smooth">
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Biblia" />
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <PWAInstallPrompt />
+
+          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-[env(safe-area-inset-top)]">
+            <div className="container mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-3 sm:px-4">
+              <Link href="/" className="font-semibold shrink-0 text-base">
+                📖 Biblia
+              </Link>
+
+              <div className="shrink-0">
+                <ThemeToggle />
+                <UserNav />
+              </div>
+            </div>
+          </header>
+
+          <main>{children}</main>
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
+
+=== components/bible/FocusModeLayout.tsx ===
+"use client";
+
+import { useFocusMode } from "@/lib/hooks/use-focus-mode";
+import { FocusModeExit } from "./FocusModeExit";
+
+interface FocusModeLayoutProps {
+  children: React.ReactNode;
+  header: React.ReactNode;
+  footer: React.ReactNode;
+}
+
+export function FocusModeLayout({
+  children,
+  header,
+  footer,
+}: FocusModeLayoutProps) {
+  const { focusMode, mounted } = useFocusMode();
+
+  if (!mounted) {
+    return (
+      <>
+        {header}
+        <div className="pb-[calc(88px+env(safe-area-inset-bottom))]">
+          {children}
+        </div>
+        <StickyFooter>{footer}</StickyFooter>
+      </>
+    );
+  }
+
+  if (focusMode) {
+    return (
+      <>
+        <div className="h-[env(safe-area-inset-top)]" />
+        <div className="pb-[calc(80px+env(safe-area-inset-bottom))]">
+          {children}
+        </div>
+        <FocusModeExit />
+      </>
+    );
+  }
+
+  return (
+    <>
+      {header}
+      <div className="pb-[calc(88px+env(safe-area-inset-bottom))]">
+        {children}
+      </div>
+      <StickyFooter>{footer}</StickyFooter>
+    </>
+  );
+}
+
+function StickyFooter({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="fixed bottom-0 left-0 right-0  bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="container mx-auto max-w-2xl px-4 py-2">
+        {children}
+      </div>
+    </div>
+  );
+}
+=== lib/hooks/use-focus-mode.ts ===
+"use client";
+
+import { useEffect, useState } from "react";
+
+const STORAGE_KEY = "biblia:focus-mode";
+const EVENT_KEY = "biblia:focus-mode-change";
+
+export function useFocusMode() {
+  const [focusMode, setFocusModeState] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    setFocusModeState(stored === "true");
+
+    const handleChange = (e: Event) => {
+      const custom = e as CustomEvent<boolean>;
+      setFocusModeState(custom.detail);
+    };
+
+    window.addEventListener(EVENT_KEY, handleChange);
+    return () => window.removeEventListener(EVENT_KEY, handleChange);
+  }, []);
+
+  const setFocusMode = (value: boolean) => {
+    setFocusModeState(value);
+    localStorage.setItem(STORAGE_KEY, String(value));
+    window.dispatchEvent(new CustomEvent(EVENT_KEY, { detail: value }));
+  };
+
+  const toggle = () => setFocusMode(!focusMode);
+
+  return { focusMode, setFocusMode, toggle, mounted };
+}
+=== lib/hooks/use-font-size.ts ===
+"use client";
+
+import { useEffect, useState } from "react";
+
+export type FontSize = "sm" | "base" | "lg" | "xl";
+
+const STORAGE_KEY = "biblia:font-size";
+const EVENT_KEY = "biblia:font-size-change";
+const DEFAULT_SIZE: FontSize = "base";
+
+export const FONT_SIZES: Record<FontSize, { label: string; class: string }> = {
+  sm: {
+    label: "Pequeño",
+    class: "text-sm sm:text-base leading-[1.7] sm:leading-[1.8]",
+  },
+  base: {
+    label: "Normal",
+    class: "text-base sm:text-lg leading-[1.8] sm:leading-[1.9]",
+  },
+  lg: {
+    label: "Grande",
+    class: "text-lg sm:text-xl leading-[1.8] sm:leading-[1.9]",
+  },
+  xl: {
+    label: "Muy grande",
+    class: "text-xl sm:text-2xl leading-[1.8] sm:leading-[1.9]",
+  },
+};
+
+function getStoredSize(): FontSize {
+  if (typeof window === "undefined") return DEFAULT_SIZE;
+  const stored = localStorage.getItem(STORAGE_KEY) as FontSize | null;
+  if (stored && stored in FONT_SIZES) return stored;
+  return DEFAULT_SIZE;
+}
+
+export function useFontSize() {
+  const [fontSize, setFontSizeState] = useState<FontSize>(DEFAULT_SIZE);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setFontSizeState(getStoredSize());
+
+    // Escuchar cambios desde otras instancias del hook
+    const handleChange = (e: Event) => {
+      const custom = e as CustomEvent<FontSize>;
+      if (custom.detail && custom.detail in FONT_SIZES) {
+        setFontSizeState(custom.detail);
+      }
+    };
+
+    window.addEventListener(EVENT_KEY, handleChange);
+    return () => window.removeEventListener(EVENT_KEY, handleChange);
+  }, []);
+
+  const setFontSize = (size: FontSize) => {
+    setFontSizeState(size);
+    localStorage.setItem(STORAGE_KEY, size);
+    // Notificar a todos los componentes que usan el hook
+    window.dispatchEvent(new CustomEvent(EVENT_KEY, { detail: size }));
+  };
+
+  const increase = () => {
+    const order: FontSize[] = ["sm", "base", "lg", "xl"];
+    const idx = order.indexOf(fontSize);
+    if (idx < order.length - 1) setFontSize(order[idx + 1]);
+  };
+
+  const decrease = () => {
+    const order: FontSize[] = ["sm", "base", "lg", "xl"];
+    const idx = order.indexOf(fontSize);
+    if (idx > 0) setFontSize(order[idx - 1]);
+  };
+
+  return {
+    fontSize,
+    fontSizeClass: FONT_SIZES[fontSize].class,
+    setFontSize,
+    increase,
+    decrease,
+    mounted,
+  };
+}
+=== app/globals.css ===
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --breakpoint-xs: 30rem;
+  --breakpoint-xs: 30rem; /* 480px */
+}
+
+:root {
+  --radius: 0.625rem;
+
+  --primary: #1E3A8A;
+  --primary-foreground: #FFFFFF;
+  --accent: #D4A574;
+  --accent-foreground: #0F172A;
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --muted: #E2E8F0;
+  --muted-foreground: #64748B;
+
+  /* 👇 Estas faltaban y causaban la transparencia */
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+  --secondary: #E2E8F0;
+  --secondary-foreground: #0F172A;
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #1E3A8A;
+
+  /* Charts (opcional, por si los usas) */
+  --chart-1: #1E3A8A;
+  --chart-2: #D4A574;
+  --chart-3: #64748B;
+  --chart-4: #3B82F6;
+  --chart-5: #F59E0B;
+
+  /* Sidebar (opcional) */
+  --sidebar: #F8FAFC;
+  --sidebar-foreground: #0F172A;
+  --sidebar-primary: #1E3A8A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E2E8F0;
+  --sidebar-accent-foreground: #0F172A;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #1E3A8A;
+}
+
+.dark {
+  --primary: #3B82F6;
+  --primary-foreground: #FFFFFF;
+  --accent: #D4A574;
+  --accent-foreground: #0F172A;
+  --background: #0F172A;
+  --foreground: #F8FAFC;
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+
+  /* 👇 Estas también faltaban */
+  --card: #1E293B;
+  --card-foreground: #F8FAFC;
+  --popover: #1E293B;
+  --popover-foreground: #F8FAFC;
+  --secondary: #1E293B;
+  --secondary-foreground: #F8FAFC;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #334155;
+  --input: #334155;
+  --ring: #3B82F6;
+
+  /* Charts */
+  --chart-1: #3B82F6;
+  --chart-2: #D4A574;
+  --chart-3: #94A3B8;
+  --chart-4: #60A5FA;
+  --chart-5: #FBBF24;
+
+  /* Sidebar */
+  --sidebar: #0F172A;
+  --sidebar-foreground: #F8FAFC;
+  --sidebar-primary: #3B82F6;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #1E293B;
+  --sidebar-accent-foreground: #F8FAFC;
+  --sidebar-border: #334155;
+  --sidebar-ring: #3B82F6;
+}
+
+/* Safe areas para iPhone con notch */
+:root {
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --safe-left: env(safe-area-inset-left);
+  --safe-right: env(safe-area-inset-right);
+}
+
+body {
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+/* Previene zoom automático en inputs de iOS */
+@media screen and (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Mejora los taps en móvil */
+@media (hover: none) {
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Áreas táctiles de mínimo 44x44px */
+  button:not([class*="h-"]),
+  a[role="button"] {
+    min-height: 44px;
+  }
+}
+
+/* Previene scroll horizontal accidental */
+html, body {
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+
+/* Mejora el scroll en iOS */
+.scroll-smooth-ios {
+  -webkit-overflow-scrolling: touch;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+    scroll-behavior: smooth;
+  }
+}
+=== app/leer/[book]/[chapter]/page.tsx ===
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Suspense } from "react";
+import {
+  getChapter,
+  getBook,
+  type VersionKey,
+  VERSIONS,
+} from "@/lib/bible-api";
+import { createClient } from "@/lib/supabase/server";
+import { getNotesForChapter } from "@/lib/supabase/notes-actions";
+import { VerseList } from "@/components/bible/VerseList";
+import { BookSelector } from "@/components/bible/BookSelector";
+import { ChapterSelector } from "@/components/bible/ChapterSelector";
+import { VersionSelector } from "@/components/bible/VersionSelector";
+import { ChapterNav } from "@/components/bible/ChapterNav";
+import { Button } from "@/components/ui/button";
+import { ReadingTracker } from "@/components/bible/ReadingTracker";
+import { FontSizeControl } from "@/components/bible/FontSizeControl";
+import { FocusModeLayout } from "@/components/bible/FocusModeLayout";
+import { FocusModeToggle } from "@/components/bible/FocusModeToggle";
+import { KeyboardShortcutsHandler } from "@/components/bible/KeyboardShortcutsHandler";
+import { KeyboardShortcutsHelp } from "@/components/bible/KeyboardShortcutsHelp";
+
+interface PageProps {
+  params: Promise<{ book: string; chapter: string }>;
+  searchParams: Promise<{ v?: string }>;
+}
+
+export default async function ChapterPage({ params, searchParams }: PageProps) {
+  const { book: bookSlug, chapter: chapterStr } = await params;
+  const { v } = await searchParams;
+  const version = (v && v in VERSIONS ? v : "rvr1960") as VersionKey;
+
+  const book = getBook(bookSlug);
+  if (!book) notFound();
+
+  const chapter = parseInt(chapterStr, 10);
+  if (isNaN(chapter) || chapter < 1 || chapter > book.chapters) notFound();
+
+  // Cargar capítulo y notas en paralelo
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const [data, notes] = await Promise.all([
+    getChapter(version, bookSlug, chapter),
+    user ? getNotesForChapter(bookSlug, chapter) : Promise.resolve([]),
+  ]);
+
+  return (
+    <FocusModeLayout
+      header={
+        <div className="container mx-auto max-w-2xl px-4 py-6 sm:py-8">
+          {/* Header con navegación compacta */}
+          <div className="mb-6 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <Link href="/">
+                <Button variant="ghost" size="sm" className="gap-1 -ml-2">
+                  ←<span className="hidden sm:inline"> Inicio</span>
+                </Button>
+              </Link>
+
+              <div className="flex items-center gap-2">
+                <KeyboardShortcutsHelp />
+                <FocusModeToggle />
+                <FontSizeControl />
+                <Suspense fallback={null}>
+                  <VersionSelector current={version} />
+                </Suspense>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <BookSelector currentSlug={bookSlug} currentChapter={chapter} />
+              <ChapterSelector
+                bookSlug={bookSlug}
+                currentChapter={chapter}
+                totalChapters={book.chapters}
+              />
+            </div>
+
+            {!user && (
+              <p className="text-xs text-muted-foreground">
+                <Link href="/login" className="underline hover:text-foreground">
+                  Inicia sesión
+                </Link>{" "}
+                para guardar notas y resaltados
+              </p>
+            )}
+          </div>
+        </div>
+      }
+      footer={
+        <div className="container mx-auto max-w-2xl px-4 pb-6 sm:pb-8">
+          <ChapterNav
+            bookSlug={bookSlug}
+            currentChapter={chapter}
+            totalChapters={book.chapters}
+            version={version}
+          />
+        </div>
+      }
+    >
+      <KeyboardShortcutsHandler
+        bookSlug={bookSlug}
+        chapter={chapter}
+        totalChapters={book.chapters}
+      />
+
+      <div className="container mx-auto max-w-2xl px-4 pt-2 pb-6 sm:pt-0">
+        <article className="prose prose-slate max-w-none dark:prose-invert">
+          <h1 className="mb-6 text-2xl font-bold sm:text-3xl">
+            {book.name} {chapter}
+          </h1>
+
+          <ReadingTracker
+            book={bookSlug}
+            bookName={book.name}
+            chapter={chapter}
+            isAuthenticated={!!user}
+          />
+
+          <VerseList
+            verses={data.verses}
+            book={bookSlug}
+            bookName={book.name}
+            chapter={chapter}
+            notes={notes}
+            isAuthenticated={!!user}
+          />
+        </article>
+      </div>
+    </FocusModeLayout>
+  );
+}
+
+export async function generateMetadata({ params, searchParams }: PageProps) {
+  const { book: bookSlug, chapter } = await params;
+  const { v } = await searchParams;
+  const version = (v && v in VERSIONS ? v : "rvr1960") as VersionKey;
+  const book = getBook(bookSlug);
+  if (!book) return { title: "No encontrado" };
+  return {
+    title: `${book.name} ${chapter} · ${VERSIONS[version].shortName}`,
+  };
+}
+=== components/bible/ChapterNav.tsx ===
+import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { BOOKS, type VersionKey } from "@/lib/bible-api";
+
+interface ChapterNavProps {
+  bookSlug: string;
+  currentChapter: number;
+  totalChapters: number;
+  version: VersionKey;
+}
+
+export function ChapterNav({
+  bookSlug,
+  currentChapter,
+  totalChapters,
+  version,
+}: ChapterNavProps) {
+  const book = BOOKS.find((b) => b.slug === bookSlug);
+  if (!book) return null;
+
+  const prevChapter = currentChapter > 1 ? currentChapter - 1 : null;
+  const prevBookIndex = BOOKS.findIndex((b) => b.slug === bookSlug) - 1;
+  const prevBook = prevBookIndex >= 0 ? BOOKS[prevBookIndex] : null;
+
+  const nextChapter = currentChapter < totalChapters ? currentChapter + 1 : null;
+  const nextBookIndex = BOOKS.findIndex((b) => b.slug === bookSlug) + 1;
+  const nextBook = nextBookIndex < BOOKS.length ? BOOKS[nextBookIndex] : null;
+
+  return (
+    <div className="flex items-center justify-between gap-2">
+      {/* Anterior */}
+      <div className="flex-1">
+        {prevChapter && (
+          <Link href={`/leer/${bookSlug}/${prevChapter}?v=${version}`}>
+            <Button
+              variant="outline"
+              className="h-auto w-full flex-col items-start gap-0.5 py-2 text-left"
+            >
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                ← Anterior
+              </span>
+              <span className="text-xs font-medium truncate">
+                {book.name} {prevChapter}
+              </span>
+            </Button>
+          </Link>
+        )}
+        {!prevChapter && prevBook && (
+          <Link href={`/leer/${prevBook.slug}/${prevBook.chapters}?v=${version}`}>
+            <Button
+              variant="outline"
+              className="h-auto w-full flex-col items-start gap-0.5 py-2 text-left"
+            >
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                ← Anterior
+              </span>
+              <span className="text-xs font-medium truncate">
+                {prevBook.name} {prevBook.chapters}
+              </span>
+            </Button>
+          </Link>
+        )}
+      </div>
+
+      {/* Siguiente */}
+      <div className="flex-1">
+        {nextChapter && (
+          <Link href={`/leer/${bookSlug}/${nextChapter}?v=${version}`}>
+            <Button
+              variant="outline"
+              className="h-auto w-full flex-col items-end gap-0.5 py-2 text-right"
+            >
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Siguiente →
+              </span>
+              <span className="text-xs font-medium truncate">
+                {book.name} {nextChapter}
+              </span>
+            </Button>
+          </Link>
+        )}
+        {!nextChapter && nextBook && (
+          <Link href={`/leer/${nextBook.slug}/1?v=${version}`}>
+            <Button
+              variant="outline"
+              className="h-auto w-full flex-col items-end gap-0.5 py-2 text-right"
+            >
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Siguiente →
+              </span>
+              <span className="text-xs font-medium truncate">
+                {nextBook.name} 1
+              </span>
+            </Button>
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+=== components/bible/FocusModeExit.tsx ===
+"use client";
+
+import { Minimize2, Type, Sun, Moon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useFocusMode } from "@/lib/hooks/use-focus-mode";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
+
+export function FocusModeExit() {
+  const { setFocusMode } = useFocusMode();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted && resolvedTheme === "dark";
+
+  return (
+    <div
+      className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 transform"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="flex items-center gap-1 rounded-full border bg-background/95 px-2 py-1.5 shadow-lg backdrop-blur">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full"
+          onClick={() => setFocusMode(false)}
+          aria-label="Salir del modo lectura"
+          title="Salir del modo lectura"
+        >
+          <Minimize2 className="h-4 w-4" />
+        </Button>
+
+        <div className="h-5 w-px bg-border" />
+
+        {mounted && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full"
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            aria-label="Cambiar tema"
+            title="Cambiar tema"
+          >
+            {isDark ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}

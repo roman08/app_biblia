@@ -1,0 +1,513 @@
+=== package.json ===
+{
+  "name": "biblia-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@serwist/next": "^9.5.12",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.1",
+    "class-variance-authority": "^0.7.1",
+    "cn": "^0.4.0",
+    "lucide-react": "^1.48.0",
+    "next": "16.3.6",
+    "next-themes": "^0.4.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "shadcn": "^4.21.0",
+    "sonner": "^2.0.8",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^18.0.3",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "serwist": "^9.5.12",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  }
+}
+
+=== next.config.ts ===
+import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+  workboxOptions: {
+    disableDevLogs: true,
+  },
+});
+
+const nextConfig: NextConfig = {};
+
+export default withPWA(nextConfig);
+=== tsconfig.json ===
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+
+=== app/layout.tsx ===
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import Link from "next/link";
+import { UserNav } from "@/components/layout/UserNav";
+import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
+// import { Search } from "lucide-react";
+import { BottomNavLoader } from "@/components/layout/BottomNavLoader";
+import { MobileHeader } from "@/components/layout/MobileHeader";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: {
+    default: "Biblia App",
+    template: "%s · Biblia App",
+  },
+  description: "Lee, medita y estudia la Palabra de Dios",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Biblia",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/icon-152.png", sizes: "152x152", type: "image/png" },
+    ],
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5, // permite zoom pero no el auto-zoom molesto
+  userScalable: true,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F8FAFC" },
+    { media: "(prefers-color-scheme: dark)", color: "#0F172A" },
+  ],
+  viewportFit: "cover", // 👈 CRÍTICO para iPhone con notch
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="es">
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Biblia" />
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <PWAInstallPrompt />
+        <MobileHeader />
+
+        <header className="sticky top-0 z-40 hidden border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-[env(safe-area-inset-top)] md:block">
+          <div className="container mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
+            <Link href="/" className="font-semibold shrink-0">
+              📖 Biblia
+            </Link>
+
+            <Link href="/buscar" className="flex-1 max-w-md min-w-0">
+              <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted transition-colors">
+                {/* <Search className="h-4 w-4 shrink-0" /> */}
+                <span className="text-xl">🔍</span>
+
+                <span className="truncate">Buscar...</span>
+              </div>
+            </Link>
+
+            <div className="shrink-0">
+              <UserNav />
+            </div>
+          </div>
+        </header>
+        <main>{children}</main>
+        {/* <BottomNavLoader /> */}
+
+      </body>
+    </html>
+  );
+}
+
+=== components/layout/BottomNav.tsx ===
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const NAV_ITEMS = [
+  { href: "/", label: "Inicio" },
+  { href: "/leer", label: "Leer" },
+  { href: "/planes", label: "Planes" },
+  { href: "/estadisticas", label: "Stats" },
+  { href: "/perfil", label: "Perfil" },
+];
+
+export function BottomNav() {
+  const pathname = usePathname();
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background md:hidden">
+      <ul className="flex justify-around">
+        {NAV_ITEMS.map((item) => {
+          const active = pathname === item.href;
+          return (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                className={`block p-3 text-xs ${
+                  active ? "text-primary font-bold" : "text-muted-foreground"
+                }`}
+              >
+                {item.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+=== components/layout/BottomNavLoader.tsx ===
+"use client";
+
+import dynamic from "next/dynamic";
+
+const BottomNav = dynamic(
+  () => import("./BottomNav").then((mod) => mod.BottomNav),
+  {
+    ssr: false,
+    loading: () => null,
+  }
+);
+
+export function BottomNavLoader() {
+  return <BottomNav />;
+}
+=== components/layout/MobileHeader.tsx ===
+import Link from "next/link";
+import { Search } from "lucide-react";
+import { UserNav } from "./UserNav";
+
+export function MobileHeader() {
+  return (
+    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur pt-[env(safe-area-inset-top)] md:hidden">
+      <div className="flex h-12 items-center justify-between gap-2 px-3">
+        <Link href="/" className="font-semibold shrink-0 text-sm">
+          📖 Biblia
+        </Link>
+
+        <div className="flex items-center gap-1 shrink-0">
+          <Link
+            href="/buscar"
+            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-accent"
+            aria-label="Buscar"
+          >
+            <Search className="h-5 w-5" />
+          </Link>
+          <UserNav />
+        </div>
+      </div>
+    </header>
+  );
+}
+=== components/layout/UserNav.tsx ===
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { signOut } from "@/lib/supabase/auth-actions";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LogOut, User, StickyNote, BookMarked, BarChart3 } from "lucide-react";
+
+export async function UserNav() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return (
+      <Link href="/login">
+        <Button size="sm">Iniciar sesión</Button>
+      </Link>
+    );
+  }
+
+  const initial = (user.email?.[0] ?? "U").toUpperCase();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full h-10 w-10"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">
+              {initial}
+            </span>
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="px-3 py-2">
+          <p className="text-sm font-medium truncate">{user.email}</p>
+        </div>
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          render={
+            <Link
+              href="/notas"
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <StickyNote className="h-4 w-4" />
+              Mis notas
+            </Link>
+          }
+        />
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          render={
+            <Link
+              href="/planes"
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <BookMarked className="h-4 w-4" />
+              Planes de lectura
+            </Link>
+          }
+        />
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          render={
+            <Link
+              href="/estadisticas"
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Estadísticas
+            </Link>
+          }
+        />
+
+        <DropdownMenuSeparator />
+
+        {/* Item: Mi perfil (usa render con <Link>) */}
+        <DropdownMenuItem
+          render={
+            <Link
+              href="/perfil"
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <User className="h-4 w-4" />
+              Mi perfil
+            </Link>
+          }
+        />
+
+        <DropdownMenuSeparator />
+
+        {/* Item: Cerrar sesión (form con server action) */}
+        <form action={signOut} className="w-full">
+          <DropdownMenuItem
+            nativeButton
+            render={
+              <button
+                type="submit"
+                className="flex w-full items-center gap-2 cursor-pointer"
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar sesión
+              </button>
+            }
+          />
+        </form>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+=== lib/utils.ts ===
+export { cn } from "cn"
+
+=== Estructura de archivos ===
+app/auth/callback/route.ts
+app/estadisticas/page.tsx
+app/layout.tsx
+app/leer/[book]/[chapter]/loading.tsx
+app/leer/[book]/[chapter]/page.tsx
+app/leer/page.tsx
+app/loading.tsx
+app/login/page.tsx
+app/manifest.ts
+app/notas/loading.tsx
+app/notas/page.tsx
+app/page.tsx
+app/perfil/loading.tsx
+app/perfil/page.tsx
+app/plan/[slug]/loading.tsx
+app/plan/[slug]/page.tsx
+app/planes/loading.tsx
+app/planes/page.tsx
+app/v/[book]/[chapter]/[verse]/page.tsx
+components/bible/BookSelector.tsx
+components/bible/ChapterNav.tsx
+components/bible/ChapterSelector.tsx
+components/bible/ReadingTracker.tsx
+components/bible/ShareImageDialog.tsx
+components/bible/VerseActions.tsx
+components/bible/VerseList.tsx
+components/bible/VersionSelector.tsx
+components/home/ActivePlanCard.tsx
+components/home/ContinueReadingCard.tsx
+components/home/VerseOfDayCard.tsx
+components/layout/BottomNav.tsx
+components/layout/BottomNavLoader.tsx
+components/layout/MobileHeader.tsx
+components/layout/UserNav.tsx
+components/plan/PlanDayCard.tsx
+components/plan/PlanDaysList.tsx
+components/plan/PlanProgress.tsx
+components/pwa/PWAInstallPrompt.tsx
+components/stats/StatsCard.tsx
+components/stats/StreakBadge.tsx
+components/ui/avatar.tsx
+components/ui/badge.tsx
+components/ui/button.tsx
+components/ui/card.tsx
+components/ui/dialog.tsx
+components/ui/dropdown-menu.tsx
+components/ui/input.tsx
+components/ui/label.tsx
+components/ui/popover.tsx
+components/ui/scroll-area.tsx
+components/ui/select.tsx
+components/ui/separator.tsx
+components/ui/skeleton.tsx
+components/ui/sonner.tsx
+components/ui/tabs.tsx
+components/ui/textarea.tsx
+lib/bible-api.ts
+lib/reading-history.ts
+lib/supabase/auth-actions.ts
+lib/supabase/client.ts
+lib/supabase/middleware.ts
+lib/supabase/notes-actions.ts
+lib/supabase/plans-actions.ts
+lib/supabase/server.ts
+lib/supabase/stats-actions.ts
+lib/utils.ts
+lib/verse-of-day.ts
+
+=== Dependencias ===
+biblia-app@0.1.0 E:\Users\1233863\Documents\test\ms\biblia-app
+├─┬ @base-ui/react@1.8.0
+│ ├─┬ @base-ui/utils@0.4.0
+│ │ ├── react-dom@19.2.8 deduped
+│ │ └── react@19.2.8 deduped
+│ ├─┬ @floating-ui/react-dom@2.1.9
+│ │ ├── react-dom@19.2.8 deduped
+│ │ └── react@19.2.8 deduped
+│ ├── react-dom@19.2.8 deduped
+│ ├── react@19.2.8 deduped
+│ └─┬ use-sync-external-store@1.7.0
+│   └── react@19.2.8 deduped
+├─┬ @serwist/next@9.5.12
+│ └── react@19.2.8 deduped
+├─┬ lucide-react@1.48.0
+│ └── react@19.2.8 deduped
+├─┬ next-themes@0.4.6
+│ ├── react-dom@19.2.8 deduped
+│ └── react@19.2.8 deduped
+├─┬ next@16.3.6
+│ ├── react-dom@19.2.8 deduped
+│ ├── react@19.2.8 deduped
+│ └─┬ styled-jsx@5.1.6
+│   └── react@19.2.8 deduped
+├─┬ react-dom@19.2.8
+│ └── react@19.2.8 deduped
+├── react@19.2.8
+└─┬ sonner@2.0.8
+  ├── react-dom@19.2.8 deduped
+  └── react@19.2.8 deduped
+
