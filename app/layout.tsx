@@ -6,6 +6,7 @@ import { UserNav } from "@/components/layout/UserNav";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -87,6 +88,8 @@ export default function RootLayout({
           </header>
 
           <main>{children}</main>
+                  <Toaster />
+
         </ThemeProvider>
       </body>
     </html>

@@ -21,6 +21,7 @@ import { FocusModeLayout } from "@/components/bible/FocusModeLayout";
 import { FocusModeToggle } from "@/components/bible/FocusModeToggle";
 import { KeyboardShortcutsHandler } from "@/components/bible/KeyboardShortcutsHandler";
 import { KeyboardShortcutsHelp } from "@/components/bible/KeyboardShortcutsHelp";
+import { ScrollToVerse } from "@/components/bible/ScrollToVerse";
 
 interface PageProps {
   params: Promise<{ book: string; chapter: string }>;
@@ -108,6 +109,7 @@ export default async function ChapterPage({ params, searchParams }: PageProps) {
         chapter={chapter}
         totalChapters={book.chapters}
       />
+      <ScrollToVerse />
 
       <div className="container mx-auto max-w-2xl px-4 pt-2 pb-6 sm:pt-0">
         <article className="prose prose-slate max-w-none dark:prose-invert">

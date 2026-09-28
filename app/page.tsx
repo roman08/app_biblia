@@ -8,6 +8,7 @@ import { ActivePlanCard } from "@/components/home/ActivePlanCard";
 import { StreakBadge } from "@/components/stats/StreakBadge";
 import { Button } from "@/components/ui/button";
 import { BookOpen, ArrowRight } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -20,6 +21,12 @@ export default async function HomePage() {
   const verseOfDay = await getVerseOfDay("rvr1960");
   const stats = await getReadingStats();
   const greeting = getGreeting();
+
+  // Obtener el usuario
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8 space-y-6">
@@ -35,8 +42,13 @@ export default async function HomePage() {
         todayRead={stats.todayRead}
       />
 
-      {verseOfDay && <VerseOfDayCard verse={verseOfDay} />}
-
+      {verseOfDay && (
+        <VerseOfDayCard
+          verse={verseOfDay}
+          isAuthenticated={!!user}
+        />
+      )}
+      
       <ContinueReadingCard />
 
       <Suspense fallback={null}>
