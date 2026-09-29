@@ -35,6 +35,33 @@ export async function isFavorite(
   return !!data;
 }
 
+function revalidateFavoritePaths(book: string, chapter: number) {
+  revalidatePath("/");
+  revalidatePath("/favoritos");
+  revalidatePath(`/leer/${book}/${chapter}`);
+}
+
+/** Números de versículo marcados como favoritos en un capítulo. */
+export async function getFavoritesForChapter(
+  book: string,
+  chapter: number
+): Promise<number[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("favorite_verses")
+    .select("verse")
+    .eq("user_id", user.id)
+    .eq("book", book)
+    .eq("chapter", chapter);
+
+  return (data ?? []).map((f) => f.verse as number);
+}
+
 export async function toggleFavorite(
   book: string,
   chapter: number,
@@ -57,7 +84,7 @@ export async function toggleFavorite(
 
   if (existing) {
     await supabase.from("favorite_verses").delete().eq("id", existing.id);
-    revalidatePath("/");
+    revalidateFavoritePaths(book, chapter);
     return false;
   } else {
     await supabase.from("favorite_verses").insert({
@@ -66,7 +93,7 @@ export async function toggleFavorite(
       chapter,
       verse,
     });
-    revalidatePath("/");
+    revalidateFavoritePaths(book, chapter);
     return true;
   }
 }

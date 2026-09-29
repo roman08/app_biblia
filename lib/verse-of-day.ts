@@ -1,4 +1,5 @@
 import { getChapter, type VersionKey } from "@/lib/bible-api";
+import { getUserToday } from "@/lib/timezone";
 
 // Lista curada de versículos icónicos para el "versículo del día"
 const VERSE_POOL = [
@@ -47,19 +48,17 @@ export interface VerseOfDay {
  * Genera un índice determinístico basado en la fecha actual.
  * El mismo día siempre devuelve el mismo versículo.
  */
-function getDailyIndex(total: number): number {
-  const today = new Date();
-  const seed =
-    today.getFullYear() * 10000 +
-    (today.getMonth() + 1) * 100 +
-    today.getDate();
+function getDailyIndex(today: string, total: number): number {
+  // today = "YYYY-MM-DD" → semilla YYYYMMDD
+  const seed = Number(today.replaceAll("-", ""));
   return seed % total;
 }
 
 export async function getVerseOfDay(
   version: VersionKey = "rvr1960"
 ): Promise<VerseOfDay | null> {
-  const index = getDailyIndex(VERSE_POOL.length);
+  // Cambia a medianoche en la hora del usuario, no en UTC
+  const index = getDailyIndex(await getUserToday(), VERSE_POOL.length);
   const ref = VERSE_POOL[index];
 
   try {

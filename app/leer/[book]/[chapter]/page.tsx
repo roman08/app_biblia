@@ -9,6 +9,7 @@ import {
 } from "@/lib/bible-api";
 import { createClient } from "@/lib/supabase/server";
 import { getNotesForChapter } from "@/lib/supabase/notes-actions";
+import { getFavoritesForChapter } from "@/lib/supabase/favorites-actions";
 import { VerseList } from "@/components/bible/VerseList";
 import { BookSelector } from "@/components/bible/BookSelector";
 import { ChapterSelector } from "@/components/bible/ChapterSelector";
@@ -22,6 +23,8 @@ import { FocusModeToggle } from "@/components/bible/FocusModeToggle";
 import { KeyboardShortcutsHandler } from "@/components/bible/KeyboardShortcutsHandler";
 import { KeyboardShortcutsHelp } from "@/components/bible/KeyboardShortcutsHelp";
 import { ScrollToVerse } from "@/components/bible/ScrollToVerse";
+import { ListenButton } from "@/components/bible/ListenButton";
+import { SpeechPlayerBar } from "@/components/bible/SpeechPlayerBar";
 
 interface PageProps {
   params: Promise<{ book: string; chapter: string }>;
@@ -45,9 +48,10 @@ export default async function ChapterPage({ params, searchParams }: PageProps) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [data, notes] = await Promise.all([
+  const [data, notes, favoriteVerses] = await Promise.all([
     getChapter(version, bookSlug, chapter),
     user ? getNotesForChapter(bookSlug, chapter) : Promise.resolve([]),
+    user ? getFavoritesForChapter(bookSlug, chapter) : Promise.resolve([]),
   ]);
 
   return (
@@ -64,6 +68,7 @@ export default async function ChapterPage({ params, searchParams }: PageProps) {
               </Link>
 
               <div className="flex items-center gap-2">
+                <ListenButton />
                 <KeyboardShortcutsHelp />
                 <FocusModeToggle />
                 <FontSizeControl />
@@ -95,6 +100,7 @@ export default async function ChapterPage({ params, searchParams }: PageProps) {
       }
       footer={
         <div className="container mx-auto max-w-2xl px-4 pb-6 sm:pb-8">
+          <SpeechPlayerBar />
           <ChapterNav
             bookSlug={bookSlug}
             currentChapter={chapter}
@@ -130,6 +136,7 @@ export default async function ChapterPage({ params, searchParams }: PageProps) {
             bookName={book.name}
             chapter={chapter}
             notes={notes}
+            favoriteVerses={favoriteVerses}
             isAuthenticated={!!user}
           />
         </article>

@@ -13,6 +13,7 @@ const SHORTCUTS = [
   { keys: ["→"], desc: "Capítulo siguiente" },
   { keys: ["+"], desc: "Aumentar tamaño" },
   { keys: ["-"], desc: "Disminuir tamaño" },
+  { keys: ["L"], desc: "Escuchar / pausar" },
   { keys: ["Esc"], desc: "Salir del modo lectura" },
   { keys: ["⌘", "K"], desc: "Buscar" },
   { keys: ["⌘", "B"], desc: "Modo lectura" },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import {
   Popover,
   PopoverContent,
@@ -8,8 +8,19 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { StickyNote, X, Share2, Copy, Image as ImageIcon } from "lucide-react";
+import {
+  StickyNote,
+  X,
+  Share2,
+  Copy,
+  Image as ImageIcon,
+  Heart,
+  Headphones,
+} from "lucide-react";
+import { toast } from "sonner";
 import { upsertHighlight, upsertNote } from "@/lib/supabase/notes-actions";
+import { toggleFavorite } from "@/lib/supabase/favorites-actions";
+import { playFromVerse } from "@/lib/speech/reader-speech";
 import { ShareImageDialog } from "./ShareImageDialog";
 import { HIGHLIGHT_COLORS } from "@/lib/highlight-colors";
 
@@ -21,6 +32,9 @@ interface VerseActionsProps {
   verseText: string;
   currentColor: string | null;
   currentNote: string | null;
+  isFavorite: boolean;
+  /** El navegador soporta lectura en voz alta */
+  canListen: boolean;
   isAuthenticated: boolean;
   children: React.ReactNode;
 }
@@ -33,6 +47,8 @@ export function VerseActions({
   verseText,
   currentColor,
   currentNote,
+  isFavorite,
+  canListen,
   isAuthenticated,
   children,
 }: VerseActionsProps) {
@@ -42,8 +58,30 @@ export function VerseActions({
   const [mode, setMode] = useState<"menu" | "note">("menu");
   const [copied, setCopied] = useState(false);
   const [shareImageOpen, setShareImageOpen] = useState(false);
+  // Se ve el cambio al instante; al revalidar llega el valor real del servidor
+  const [optimisticFavorite, setOptimisticFavorite] = useOptimistic(isFavorite);
 
   const reference = `${bookName} ${chapter}:${verse}`;
+
+  const handleToggleFavorite = () => {
+    setOpen(false);
+    startTransition(async () => {
+      setOptimisticFavorite(!optimisticFavorite);
+      try {
+        const nowFavorite = await toggleFavorite(book, chapter, verse);
+        toast.success(
+          nowFavorite ? "Agregado a favoritos" : "Quitado de favoritos"
+        );
+      } catch {
+        toast.error("No se pudo guardar el favorito. Intenta de nuevo.");
+      }
+    });
+  };
+
+  const handleListenFromHere = () => {
+    setOpen(false);
+    playFromVerse(verse);
+  };
 
   const handleHighlight = (color: string | null) => {
     startTransition(async () => {
@@ -166,6 +204,36 @@ export function VerseActions({
                     <StickyNote className="h-4 w-4" />
                     {currentNote ? "Editar nota" : "Agregar nota"}
                   </Button>
+                </div>
+              )}
+
+              {(isAuthenticated || canListen) && (
+                <div className="border-t pt-3 space-y-1">
+                  {isAuthenticated && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start gap-2"
+                      onClick={handleToggleFavorite}
+                      disabled={isPending}
+                    >
+                      <Heart
+                        className={`h-4 w-4 ${optimisticFavorite ? "fill-current text-primary" : ""}`}
+                      />
+                      {optimisticFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+                    </Button>
+                  )}
+                  {canListen && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start gap-2"
+                      onClick={handleListenFromHere}
+                    >
+                      <Headphones className="h-4 w-4" />
+                      Escuchar desde aquí
+                    </Button>
+                  )}
                 </div>
               )}
 

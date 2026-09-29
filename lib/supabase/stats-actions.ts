@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getUserToday } from "@/lib/timezone";
+import { addDays, daysBetween } from "@/lib/dates";
 
 export interface ReadingStats {
   currentStreak: number;
@@ -21,7 +23,8 @@ export async function recordReadingActivity() {
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  const today = new Date().toISOString().split("T")[0];
+  // Fecha local del usuario (no UTC): leer a las 9 pm en México cuenta para hoy
+  const today = await getUserToday();
 
   // Upsert: si ya existe el registro de hoy, incrementa chapters_read
   const { data: existing } = await supabase
@@ -61,7 +64,7 @@ export async function getReadingStats(): Promise<ReadingStats> {
 
   if (!user) return empty;
 
-  // Obtener todas las fechas de actividad, ordenadas descendente
+  // Obtener todas las fechas de actividad (YYYY-MM-DD)
   const { data: activities } = await supabase
     .from("reading_activity")
     .select("activity_date")
@@ -70,69 +73,38 @@ export async function getReadingStats(): Promise<ReadingStats> {
 
   if (!activities || activities.length === 0) return empty;
 
-  const dates = activities.map((a) => a.activity_date);
+  const dates = new Set<string>(activities.map((a) => a.activity_date));
 
-  // Racha actual: contar días consecutivos desde hoy o ayer
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+  // Todas las fechas se comparan como strings en la hora local del usuario
+  const today = await getUserToday();
+  const todayRead = dates.has(today);
 
-  const todayStr = today.toISOString().split("T")[0];
-  const yesterdayStr = yesterday.toISOString().split("T")[0];
-
-  const todayRead = dates.includes(todayStr);
-  const startFrom = todayRead ? todayStr : yesterdayStr;
-
+  // Racha actual: días consecutivos desde hoy (o desde ayer si hoy aún no lee)
   let currentStreak = 0;
-  if (dates.includes(startFrom)) {
-    const checkDate = new Date(startFrom);
-    while (true) {
-      const dateStr = checkDate.toISOString().split("T")[0];
-      if (dates.includes(dateStr)) {
-        currentStreak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else {
-        break;
-      }
-    }
+  let cursor = todayRead ? today : addDays(today, -1);
+  while (dates.has(cursor)) {
+    currentStreak++;
+    cursor = addDays(cursor, -1);
   }
 
-  // Racha máxima: recorrer todas las fechas ordenadas
+  // Racha máxima: recorrer las fechas en orden ascendente
   let longestStreak = 0;
   let tempStreak = 0;
-  let prevDate: Date | null = null;
-
-  const sortedAsc = [...dates].sort();
-  for (const dateStr of sortedAsc) {
-    const date = new Date(dateStr);
-    if (prevDate === null) {
-      tempStreak = 1;
-    } else {
-      const diffDays = Math.round(
-        (date.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      if (diffDays === 1) {
-        tempStreak++;
-      } else {
-        longestStreak = Math.max(longestStreak, tempStreak);
-        tempStreak = 1;
-      }
-    }
-    prevDate = date;
+  let prev: string | null = null;
+  for (const date of [...dates].sort()) {
+    tempStreak = prev !== null && daysBetween(prev, date) === 1 ? tempStreak + 1 : 1;
+    longestStreak = Math.max(longestStreak, tempStreak);
+    prev = date;
   }
-  longestStreak = Math.max(longestStreak, tempStreak);
 
   // Últimos 30 días
-  const thirtyDaysAgo = new Date(today);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
-  const last30DaysCount = dates.filter((d) => d >= thirtyDaysAgoStr).length;
+  const thirtyDaysAgo = addDays(today, -30);
+  const last30DaysCount = [...dates].filter((d) => d >= thirtyDaysAgo).length;
 
   return {
     currentStreak,
     longestStreak,
-    totalDaysRead: dates.length,
+    totalDaysRead: dates.size,
     last30DaysCount,
     todayRead,
   };

@@ -7,6 +7,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { UserNav } from "@/components/layout/UserNav";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { TimezoneSync } from "@/components/providers/TimezoneSync";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -74,6 +75,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
+          <TimezoneSync />
           <PWAInstallPrompt />
 
           <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-[env(safe-area-inset-top)]">

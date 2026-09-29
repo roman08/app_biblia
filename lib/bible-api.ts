@@ -1,9 +1,12 @@
 const BASE = "https://api.midvash.com/v1";
 
+// Las claves son los slugs de Midvash. Ojo: en Midvash `nvi` es la NVI en
+// portugués; la NVI en español es `nvies`.
 export const VERSIONS = {
   rvr1960: { name: "Reina Valera 1960", shortName: "RVR1960" },
-  nvi:     { name: "Nueva Versión Internacional", shortName: "NVI" },
+  nvies:   { name: "Nueva Versión Internacional", shortName: "NVI" },
   ntv:     { name: "Nueva Traducción Viviente", shortName: "NTV" },
+  rvr1909: { name: "Reina Valera 1909", shortName: "RVR1909" },
 } as const;
 
 export type VersionKey = keyof typeof VERSIONS;
@@ -117,12 +120,57 @@ export async function getChapter(
     text,
   }));
 
+  // Midvash devuelve el slug y el nombre del libro en inglés ("john", "John");
+  // usamos siempre nuestro slug y nombre en español.
+  const bookName = getBook(book)?.name ?? raw.bookName;
+
   return {
     version: raw.version,
-    book: raw.book,
-    bookName: raw.bookName,
+    book,
+    bookName,
     chapter: raw.chapter,
-    reference: json.meta?.reference ?? `${raw.bookName} ${raw.chapter}`,
+    reference: `${bookName} ${raw.chapter}`,
     verses,
   };
+}
+export interface VerseRef {
+  book: string;
+  chapter: number;
+  verse: number;
+}
+
+const PASSAGES_BATCH = 50; // límite de Midvash por llamada
+
+/**
+ * Trae el texto de varios versículos sueltos en pocas llamadas
+ * (GET /v1/passages, hasta 50 referencias cada una).
+ * Devuelve los textos en el mismo orden que `refs`; `null` si alguno falla.
+ */
+export async function getPassages(
+  refs: VerseRef[],
+  version: VersionKey = "rvr1960"
+): Promise<(string | null)[]> {
+  const batches: VerseRef[][] = [];
+  for (let i = 0; i < refs.length; i += PASSAGES_BATCH) {
+    batches.push(refs.slice(i, i + PASSAGES_BATCH));
+  }
+
+  const results = await Promise.all(
+    batches.map(async (batch) => {
+      const q = batch.map((r) => `${r.book} ${r.chapter}:${r.verse}`).join(",");
+      const url = `${BASE}/passages?refs=${encodeURIComponent(q)}&version=${version}`;
+      try {
+        const res = await fetch(url, { next: { revalidate: 86400 } });
+        if (!res.ok) return batch.map(() => null);
+        const json = (await res.json()) as {
+          data: Array<{ text?: string; error?: string }>;
+        };
+        return batch.map((_, i) => json.data[i]?.text ?? null);
+      } catch {
+        return batch.map(() => null);
+      }
+    })
+  );
+
+  return results.flat();
 }

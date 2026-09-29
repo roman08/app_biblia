@@ -46,12 +46,14 @@ Variables de entorno (`.env.local`): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SU
 - Midvash API: `GET https://api.midvash.com/v1/{version}/{book}/{chapter}`. Se cachea con `next: { revalidate: 86400 }`.
 - La respuesta `data.verses` es un **array de strings**; el número de versículo es índice + 1. `getChapter()` lo normaliza a `{ verse, text }[]`.
 - `BOOKS` es la fuente de verdad de los slugs en español (`genesis`, `1-samuel`, `cantares`…) y del número de capítulos. Rutas, planes y scripts deben usar estos slugs.
-- `VERSIONS` define rvr1960, nvi y ntv, pero la UI usa RVR1960.
+- `VERSIONS` usa los slugs de Midvash: `rvr1960`, `nvies`, `ntv` y `rvr1909`. **Ojo:** en Midvash, `nvi` es la NVI en portugués; la NVI en español es `nvies`. `GET /v1/versions` lista todas.
+- Midvash devuelve `book` y `bookName` en inglés ("john", "John"). Muestra siempre `getBook(slug).name`; `getChapter()` ya lo hace.
+- Para varios versículos sueltos usa `getPassages()` (`/v1/passages`, 50 referencias por llamada), no un `getChapter` por versículo. Midvash no tiene búsqueda por texto.
 
 ### Auth y sesión (Supabase SSR)
 
 - `lib/supabase/server.ts` y `client.ts` crean los clientes de servidor y navegador.
-- [proxy.ts](proxy.ts) llama a `updateSession` ([lib/supabase/middleware.ts](lib/supabase/middleware.ts)) en cada request y redirige `/perfil` y `/notas` a `/login?next=…` si no hay usuario. Agrega aquí las rutas protegidas nuevas.
+- [proxy.ts](proxy.ts) llama a `updateSession` ([lib/supabase/middleware.ts](lib/supabase/middleware.ts)) en cada request y redirige las rutas de `PROTECTED_ROUTES` (`/perfil`, `/notas`, `/favoritos`) a `/login?next=…` si no hay usuario. Agrega aquí las rutas protegidas nuevas.
 - Login OAuth: el login usa enlaces `<a href="/auth/signin/{google|github}">` hacia un **route handler GET** ([app/auth/signin/[provider]/route.ts](app/auth/signin/[provider]/route.ts)), que arma `redirectTo` a partir del header `host`. Después, `/auth/callback` intercambia el código por la sesión. La server action `lib/supabase/auth-actions.ts` existe, pero el login no la usa.
 
 ### Mutaciones
@@ -63,6 +65,15 @@ Las escrituras pasan por Server Actions en `lib/supabase/*-actions.ts` (`"use se
 - Último capítulo leído: `localStorage` (`biblia:last-read`) en [lib/reading-history.ts](lib/reading-history.ts), usado por "Continuar leyendo".
 - Tamaño de fuente, modo enfocado y atajos: hooks en `lib/hooks/`.
 - Tema: `components/providers/ThemeProvider` propio. **No agregues next-themes.**
+- Lectura en voz alta: store a nivel de módulo en [lib/speech/reader-speech.ts](lib/speech/reader-speech.ts), que se lee con `useReaderSpeech()`. `VerseList` registra el capítulo con `registerSpeechChapter`. Se lee un versículo por utterance, y pausar es en realidad cancelar y recordar el índice.
+
+### Fechas y zona horaria
+
+"Hoy" siempre es la fecha **local del usuario**. **Nunca uses `toISOString()` para calcular un día**, porque da la fecha en UTC.
+
+- `components/providers/TimezoneSync.tsx` guarda la zona del navegador en la cookie `tz`.
+- En el servidor, `getUserToday()` y `getUserTimeZone()` de [lib/timezone.ts](lib/timezone.ts) la leen (por defecto `America/Mexico_City`).
+- Para operar con fechas `YYYY-MM-DD` usa `addDays` y `daysBetween` de [lib/dates.ts](lib/dates.ts).
 
 ### Push notifications (tres piezas)
 
@@ -80,6 +91,8 @@ Tablas: `profiles`, `reading_plans` y `plan_days` (catálogo público), `user_pl
 - `reading_activity`: una fila por usuario/día; se incrementa `chapters_read` y de ahí sale la racha.
 - `user_plans.completed_days`: jsonb con un array de números de día.
 - La service role nunca se usa en código que llegue al cliente.
+- Los cambios de esquema van en `supabase/migrations/<timestamp>_<nombre>.sql`, con sus políticas RLS, y escritos de forma idempotente (`if not exists`). Se aplican con `npx supabase db push`.
+- `favorite_verses` tiene un índice único `(user_id, book, chapter, verse)`.
 
 ## 🎨 Reglas de UI
 

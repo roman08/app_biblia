@@ -2,6 +2,7 @@
 
 import { useFocusMode } from "@/lib/hooks/use-focus-mode";
 import { FocusModeExit } from "./FocusModeExit";
+import { useReaderSpeech } from "@/lib/hooks/use-reader-speech";
 
 interface FocusModeLayoutProps {
   children: React.ReactNode;
@@ -15,6 +16,9 @@ export function FocusModeLayout({
   footer,
 }: FocusModeLayoutProps) {
   const { focusMode, mounted } = useFocusMode();
+  // Con la barra de reproducción visible el pie es más alto
+  const { status } = useReaderSpeech();
+  const footerSpacer = status === "idle" ? "h-24" : "h-40";
 
   // Estado inicial: solo renderizar contenido
   if (!mounted) {
@@ -22,7 +26,7 @@ export function FocusModeLayout({
       <>
         {header}
         {children}
-        <div className="h-24" aria-hidden="true" />
+        <div className={footerSpacer} aria-hidden="true" />
         <StickyFooter>{footer}</StickyFooter>
       </>
     );
@@ -44,7 +48,7 @@ export function FocusModeLayout({
     <>
       {header}
       {children}
-      <div className="h-24" aria-hidden="true" />
+      <div className={footerSpacer} aria-hidden="true" />
       <StickyFooter>{footer}</StickyFooter>
     </>
   );

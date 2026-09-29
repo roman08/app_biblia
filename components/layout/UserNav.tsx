@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, StickyNote, BookMarked, BarChart3 } from "lucide-react";
+import { LogOut, User, StickyNote, BookMarked, BarChart3, Heart } from "lucide-react";
 
 export async function UserNav() {
   const supabase = await createClient();
@@ -56,6 +56,17 @@ export async function UserNav() {
             >
               <StickyNote className="h-4 w-4" />
               Mis notas
+            </Link>
+          }
+        />
+        <DropdownMenuItem
+          render={
+            <Link
+              href="/favoritos"
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <Heart className="h-4 w-4" />
+              Favoritos
             </Link>
           }
         />

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
 
-const PROTECTED_ROUTES = ["/perfil", "/notas"];
+const PROTECTED_ROUTES = ["/perfil", "/notas", "/favoritos"];
 
 export async function proxy(request: NextRequest) {
   const response = await updateSession(request);

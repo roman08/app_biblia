@@ -4,6 +4,7 @@ import { useTheme } from "@/components/providers/ThemeProvider";
 import { useFocusMode } from "@/lib/hooks/use-focus-mode";
 import { useFontSize } from "@/lib/hooks/use-font-size";
 import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
+import { toggleSpeech } from "@/lib/speech/reader-speech";
 import { useEffect, useState } from "react";
 
 interface KeyboardShortcutsHandlerProps {
@@ -41,6 +42,7 @@ export function KeyboardShortcutsHandler({
     onIncreaseFont: increase,
     onDecreaseFont: decrease,
     onExitFocus: () => setFocusMode(false),
+    onToggleSpeech: toggleSpeech,
   });
 
   return null;

@@ -14,6 +14,7 @@ interface ShortcutOptions {
   onIncreaseFont?: () => void;
   onDecreaseFont?: () => void;
   onExitFocus?: () => void;
+  onToggleSpeech?: () => void;
 }
 
 export function useKeyboardShortcuts(options: ShortcutOptions) {
@@ -52,6 +53,13 @@ export function useKeyboardShortcuts(options: ShortcutOptions) {
       if (isMod && e.shiftKey && key === "l") {
         e.preventDefault();
         options.onToggleTheme?.();
+        return;
+      }
+
+      // L → Escuchar / pausar el capítulo
+      if (!isMod && !e.shiftKey && key === "l" && options.onToggleSpeech) {
+        e.preventDefault();
+        options.onToggleSpeech();
         return;
       }
 
