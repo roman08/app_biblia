@@ -5,22 +5,27 @@ import { getReadingStats } from "@/lib/supabase/stats-actions";
 import { VerseOfDayCard } from "@/components/home/VerseOfDayCard";
 import { ContinueReadingCard } from "@/components/home/ContinueReadingCard";
 import { ActivePlanCard } from "@/components/home/ActivePlanCard";
+import { Greeting } from "@/components/home/Greeting";
 import { StreakBadge } from "@/components/stats/StreakBadge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, ArrowRight } from "lucide-react";
+import {
+  BookOpen,
+  ArrowRight,
+  BookMarked,
+  StickyNote,
+  BarChart3,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Buenos días";
-  if (hour < 19) return "Buenas tardes";
-  return "Buenas noches";
-}
+const QUICK_LINKS = [
+  { href: "/planes", label: "Planes", hint: "Lecturas guiadas", icon: BookMarked },
+  { href: "/notas", label: "Notas", hint: "Resaltados", icon: StickyNote },
+  { href: "/estadisticas", label: "Estadísticas", hint: "Tu progreso", icon: BarChart3 },
+];
 
 export default async function HomePage() {
   const verseOfDay = await getVerseOfDay("rvr1960");
   const stats = await getReadingStats();
-  const greeting = getGreeting();
 
   // Obtener el usuario
   const supabase = await createClient();
@@ -31,7 +36,7 @@ export default async function HomePage() {
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{greeting}</h1>
+        <Greeting />
         <p className="mt-1 text-muted-foreground">
           Un momento con la Palabra
         </p>
@@ -48,53 +53,52 @@ export default async function HomePage() {
           isAuthenticated={!!user}
         />
       )}
-      
-      <ContinueReadingCard />
+
+      <ContinueReadingCard fallback={<ExploreCard />} />
 
       <Suspense fallback={null}>
         <ActivePlanCard />
       </Suspense>
 
-      <div className="rounded-lg border bg-card p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <BookOpen className="h-6 w-6 text-primary" />
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        {QUICK_LINKS.map(({ href, label, hint, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className="flex flex-col gap-2 rounded-lg border bg-card p-3 transition-colors hover:bg-muted sm:p-4"
+          >
+            <Icon className="h-5 w-5 text-primary" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">{label}</p>
+              <p className="truncate text-xs text-muted-foreground">{hint}</p>
             </div>
-            <div>
-              <p className="font-semibold">Explorar la Biblia</p>
-              <p className="text-sm text-muted-foreground">
-                66 libros · Antiguo y Nuevo Testamento
-              </p>
-            </div>
-          </div>
-          <Link href="/leer">
-            <Button className="gap-2">
-              Abrir
-              <ArrowRight className="h-4 w-4" />
-            </Button>
           </Link>
-        </div>
+        ))}
       </div>
+    </div>
+  );
+}
 
-      <div className="grid grid-cols-3 gap-4">
-        <Link href="/planes">
-          <div className="rounded-lg border p-4 hover:bg-accent transition-colors">
-            <p className="font-semibold text-sm">Planes</p>
-            <p className="text-xs text-muted-foreground">Lecturas guiadas</p>
+function ExploreCard() {
+  return (
+    <div className="rounded-lg border bg-card p-6">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <BookOpen className="h-6 w-6 text-primary" />
           </div>
-        </Link>
-        <Link href="/notas">
-          <div className="rounded-lg border p-4 hover:bg-accent transition-colors">
-            <p className="font-semibold text-sm">Notas</p>
-            <p className="text-xs text-muted-foreground">Resaltados</p>
+          <div>
+            <p className="font-semibold">Explorar la Biblia</p>
+            <p className="text-sm text-muted-foreground">
+              66 libros · Antiguo y Nuevo Testamento
+            </p>
           </div>
-        </Link>
-        <Link href="/estadisticas">
-          <div className="rounded-lg border p-4 hover:bg-accent transition-colors">
-            <p className="font-semibold text-sm">Stats</p>
-            <p className="text-xs text-muted-foreground">Tu progreso</p>
-          </div>
+        </div>
+        <Link href="/leer">
+          <Button className="gap-2">
+            Abrir
+            <ArrowRight className="h-4 w-4" />
+          </Button>
         </Link>
       </div>
     </div>

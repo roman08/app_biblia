@@ -5,13 +5,8 @@ import type { Verse } from "@/lib/bible-api";
 import type { Note } from "@/lib/supabase/notes-actions";
 import { VerseActions } from "./VerseActions";
 import { useFontSize } from "@/lib/hooks/use-font-size";
-
-const COLOR_CLASSES: Record<string, string> = {
-  yellow: "bg-yellow-200/60 dark:bg-yellow-900/30",
-  green: "bg-green-200/60 dark:bg-green-900/30",
-  blue: "bg-blue-200/60 dark:bg-blue-900/30",
-  pink: "bg-pink-200/60 dark:bg-pink-900/30",
-};
+import { getHighlight } from "@/lib/highlight-colors";
+import { StickyNote } from "lucide-react";
 
 interface VerseListProps {
   verses: Verse[];
@@ -46,7 +41,7 @@ export function VerseList({
     <div className="space-y-3">
       {verses.map((v) => {
         const note = notesByVerse.get(v.verse);
-        const colorClass = note?.color ? COLOR_CLASSES[note.color] ?? "" : "";
+        const colorClass = getHighlight(note?.color)?.text ?? "";
 
         return (
           <VerseActions
@@ -62,16 +57,17 @@ export function VerseList({
           >
             <p
               id={`v${v.verse}`}
-              className={`${textClass} tracking-[0.01em] text-foreground/90 rounded px-2 py-1 -mx-2 ${colorClass}`}
+              className={`${textClass} font-serif text-foreground/90 rounded px-2 py-1 -mx-2 ${colorClass}`}
             >
-              <sup className="mr-2 text-xs font-semibold text-primary align-super select-none">
+              <sup className="mr-1.5 font-sans text-[0.65em] font-medium text-muted-foreground align-super select-none">
                 {v.verse}
               </sup>
               {v.text}
               {note?.content && (
-                <span className="ml-2 inline-block rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground align-middle">
-                  nota
-                </span>
+                <StickyNote
+                  className="ml-1.5 inline-block h-3.5 w-3.5 align-baseline text-primary/70"
+                  aria-label="Tiene nota"
+                />
               )}
             </p>
           </VerseActions>

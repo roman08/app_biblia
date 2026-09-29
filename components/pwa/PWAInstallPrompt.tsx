@@ -51,7 +51,7 @@ export function PWAInstallPrompt() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-sm">
+    <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-4 right-4 z-50 sm:bottom-4 md:left-auto md:right-4 md:max-w-sm">
       <div className="flex items-start gap-3 rounded-lg border bg-card p-4 shadow-lg">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
           <Download className="h-5 w-5 text-primary" />
@@ -72,7 +72,7 @@ export function PWAInstallPrompt() {
         </div>
         <button
           onClick={handleDismiss}
-          className="shrink-0 rounded p-1 hover:bg-accent"
+          className="shrink-0 rounded p-1 hover:bg-muted"
           aria-label="Cerrar"
         >
           <X className="h-4 w-4" />

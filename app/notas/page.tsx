@@ -10,13 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-const COLOR_CLASSES: Record<string, string> = {
-  yellow: "bg-yellow-300",
-  green: "bg-green-300",
-  blue: "bg-blue-300",
-  pink: "bg-pink-300",
-};
+import { getHighlight } from "@/lib/highlight-colors";
 
 export default async function NotasPage() {
   const supabase = await createClient();
@@ -76,12 +70,12 @@ export default async function NotasPage() {
                   <Link
                     key={note.id}
                     href={`/leer/${note.book}/${note.chapter}#v${note.verse}`}
-                    className="flex gap-3 items-start rounded-md border p-3 hover:bg-accent active:bg-accent/80 transition-colors"
+                    className="flex gap-3 items-start rounded-md border p-3 hover:bg-muted active:bg-muted/80 transition-colors"
                   >
                     {note.color && (
                       <span
                         className={`mt-0.5 h-4 w-4 shrink-0 rounded-full ${
-                          COLOR_CLASSES[note.color] ?? "bg-muted"
+                          getHighlight(note.color)?.swatch ?? "bg-muted"
                         }`}
                       />
                     )}

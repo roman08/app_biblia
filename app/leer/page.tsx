@@ -33,7 +33,7 @@ export default function LeerPage() {
             <Link
               key={book.slug}
               href={`/leer/${book.slug}/1`}
-              className="flex items-center rounded-md px-3 py-2.5 text-sm hover:bg-accent active:bg-accent/80 transition-colors"
+              className="flex items-center rounded-md px-3 py-2.5 text-sm hover:bg-muted active:bg-muted/80 transition-colors"
             >
               {book.name}
             </Link>
@@ -50,7 +50,7 @@ export default function LeerPage() {
             <Link
               key={book.slug}
               href={`/leer/${book.slug}/1`}
-              className="flex items-center rounded-md px-3 py-2.5 text-sm hover:bg-accent active:bg-accent/80 transition-colors"
+              className="flex items-center rounded-md px-3 py-2.5 text-sm hover:bg-muted active:bg-muted/80 transition-colors"
             >
               {book.name}
             </Link>

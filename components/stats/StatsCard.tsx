@@ -19,7 +19,7 @@ export function StatsCard({
     <Card>
       <CardContent className="p-4">
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground mb-2 sm:text-xs">
-          <Flame className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+          <Flame className="h-3.5 w-3.5 text-streak shrink-0" />
           <span className="truncate">Racha actual</span>
         </div>
         <p className="text-2xl font-bold sm:text-3xl">{currentStreak}</p>
@@ -32,7 +32,7 @@ export function StatsCard({
     <Card>
       <CardContent className="p-4">
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground mb-2 sm:text-xs">
-          <Trophy className="h-3.5 w-3.5 text-yellow-500 shrink-0" />
+          <Trophy className="h-3.5 w-3.5 text-accent shrink-0" />
           <span className="truncate">Récord</span>
         </div>
         <p className="text-2xl font-bold sm:text-3xl">{longestStreak}</p>
@@ -45,7 +45,7 @@ export function StatsCard({
     <Card>
       <CardContent className="p-4">
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground mb-2 sm:text-xs">
-          <Calendar className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+          <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
           <span className="truncate">Últimos 30 días</span>
         </div>
         <p className="text-2xl font-bold sm:text-3xl">{last30DaysCount}</p>
@@ -58,7 +58,7 @@ export function StatsCard({
     <Card>
       <CardContent className="p-4">
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground mb-2 sm:text-xs">
-          <BookOpen className="h-3.5 w-3.5 text-green-500 shrink-0" />
+          <BookOpen className="h-3.5 w-3.5 text-success shrink-0" />
           <span className="truncate">Total</span>
         </div>
         <p className="text-2xl font-bold sm:text-3xl">{totalDaysRead}</p>

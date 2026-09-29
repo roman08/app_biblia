@@ -7,7 +7,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, ArrowRight } from "lucide-react";
 import { getLastRead, type LastRead } from "@/lib/reading-history";
 
-export function ContinueReadingCard() {
+interface ContinueReadingCardProps {
+  /** Se muestra en su lugar cuando el usuario aún no ha leído nada */
+  fallback?: React.ReactNode;
+}
+
+export function ContinueReadingCard({ fallback = null }: ContinueReadingCardProps) {
   const [lastRead, setLastRead] = useState<LastRead | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -17,7 +22,8 @@ export function ContinueReadingCard() {
   }, []);
 
   // Evitamos hydration mismatch: no renderizamos hasta que se lea localStorage
-  if (!loaded || !lastRead) return null;
+  if (!loaded) return null;
+  if (!lastRead) return <>{fallback}</>;
 
   return (
     <Card>

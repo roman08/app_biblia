@@ -86,6 +86,9 @@ Tablas: `profiles`, `reading_plans` y `plan_days` (catálogo público), `user_pl
 - Server Components por defecto. `"use client"` solo si hay hooks, eventos o `window`. **No uses `dynamic(..., { ssr: false })`.**
 - Tailwind v4: los tokens se definen con `@theme inline` en `app/globals.css`, dentro de `:root` y `.dark`. Usa siempre variables semánticas (`bg-card`, `bg-popover`, `text-muted-foreground`) y nunca colores hardcodeados. Si un popover sale transparente, falta la variable en `:root` o `.dark`.
 - Diseño mobile-first, con área táctil mínima de 44px.
+- Tokens propios además de los de shadcn: `success`, `streak`, `highlight-{yellow,green,blue,pink}` y `tag-{amber,purple,blue,green}` (se usan como `text-tag-x` + `bg-tag-x/10`). Los colores de resaltado se definen una sola vez en `lib/highlight-colors.ts`.
+- `hover:bg-accent` es dorado y no contrasta bien en modo oscuro; para hover usa `hover:bg-muted`.
+- `components/layout/BottomNav.tsx` (solo en móvil) se oculta en el lector `/leer/[book]/[chapter]`, que tiene su propia barra fija de capítulos. Si agregas otra pantalla con barra inferior fija, agrégala a `isHidden`.
 - `lucide-react` se queda en 0.468.x; no actualices a 1.x.
 - `components/ui/` son componentes shadcn generados; no los edites sin una razón.
 - **Base UI, no Radix:**

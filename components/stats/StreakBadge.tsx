@@ -10,10 +10,10 @@ export function StreakBadge({ currentStreak, todayRead }: StreakBadgeProps) {
   if (currentStreak === 0 && !todayRead) return null;
 
   return (
-    <Card className="border-orange-500/20 bg-gradient-to-r from-orange-500/5 to-transparent">
+    <Card className="border-streak/20 bg-gradient-to-r from-streak/5 to-transparent">
       <CardContent className="flex items-center gap-3 p-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/10">
-          <Flame className="h-6 w-6 text-orange-500" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-streak/10">
+          <Flame className="h-6 w-6 text-streak" />
         </div>
         <div className="flex-1">
           <p className="font-semibold">

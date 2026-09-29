@@ -11,13 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { StickyNote, X, Share2, Copy, Image as ImageIcon } from "lucide-react";
 import { upsertHighlight, upsertNote } from "@/lib/supabase/notes-actions";
 import { ShareImageDialog } from "./ShareImageDialog";
-
-const COLORS = [
-  { name: "Amarillo", value: "yellow", class: "bg-yellow-300" },
-  { name: "Verde", value: "green", class: "bg-green-300" },
-  { name: "Azul", value: "blue", class: "bg-blue-300" },
-  { name: "Rosa", value: "pink", class: "bg-pink-300" },
-];
+import { HIGHLIGHT_COLORS } from "@/lib/highlight-colors";
 
 interface VerseActionsProps {
   book: string;
@@ -112,7 +106,7 @@ export function VerseActions({
             <span
               role="button"
               tabIndex={0}
-              className="cursor-pointer hover:bg-accent/50 rounded transition-colors block w-full text-left focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="cursor-pointer hover:bg-muted/60 rounded transition-colors block w-full text-left focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           }
         >
@@ -134,12 +128,12 @@ export function VerseActions({
                     Resaltar
                   </p>
                   <div className="flex gap-2">
-                    {COLORS.map((c) => (
+                    {HIGHLIGHT_COLORS.map((c) => (
                       <button
                         key={c.value}
                         onClick={() => handleHighlight(c.value)}
                         disabled={isPending}
-                        className={`h-8 w-8 rounded-full border-2 ${c.class} ${
+                        className={`h-8 w-8 rounded-full border-2 ${c.swatch} ${
                           currentColor === c.value
                             ? "border-foreground"
                             : "border-transparent"
@@ -151,7 +145,7 @@ export function VerseActions({
                       <button
                         onClick={() => handleHighlight(null)}
                         disabled={isPending}
-                        className="h-8 w-8 rounded-full border border-dashed flex items-center justify-center hover:bg-accent"
+                        className="h-8 w-8 rounded-full border border-dashed flex items-center justify-center hover:bg-muted"
                         title="Quitar resaltado"
                       >
                         <X className="h-4 w-4" />

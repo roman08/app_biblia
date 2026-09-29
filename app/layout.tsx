@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import Image from "next/image";
 import "./globals.css";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { UserNav } from "@/components/layout/UserNav";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -76,8 +78,19 @@ export default function RootLayout({
 
           <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-[env(safe-area-inset-top)]">
             <div className="container mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-3 sm:px-4">
-              <Link href="/" className="font-semibold shrink-0 text-base">
-                📖 Biblia
+              <Link
+                href="/"
+                className="flex shrink-0 items-center gap-2 text-base font-semibold"
+              >
+                <Image
+                  src="/icons/icon-96.png"
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="rounded-md"
+                  priority
+                />
+                Biblia
               </Link>
 
               <div className="shrink-0">
@@ -88,7 +101,8 @@ export default function RootLayout({
           </header>
 
           <main>{children}</main>
-                  <Toaster />
+          <BottomNav />
+          <Toaster />
 
         </ThemeProvider>
       </body>

@@ -53,7 +53,7 @@ export default async function ChapterPage({ params, searchParams }: PageProps) {
   return (
     <FocusModeLayout
       header={
-        <div className="container mx-auto max-w-2xl px-4 py-6 sm:py-8">
+        <div className="container mx-auto max-w-prose px-4 py-6 sm:py-8">
           {/* Header con navegación compacta */}
           <div className="mb-6 space-y-3">
             <div className="flex items-center justify-between gap-2">
@@ -111,9 +111,9 @@ export default async function ChapterPage({ params, searchParams }: PageProps) {
       />
       <ScrollToVerse />
 
-      <div className="container mx-auto max-w-2xl px-4 pt-2 pb-6 sm:pt-0">
-        <article className="prose prose-slate max-w-none dark:prose-invert">
-          <h1 className="mb-6 text-2xl font-bold sm:text-3xl">
+      <div className="container mx-auto max-w-prose px-4 pt-2 pb-6 sm:pt-0">
+        <article>
+          <h1 className="mb-6 font-serif text-2xl font-bold sm:text-3xl">
             {book.name} {chapter}
           </h1>
 

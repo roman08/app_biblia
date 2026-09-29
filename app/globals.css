@@ -7,7 +7,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: Georgia, Cambria, "Times New Roman", serif;
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -40,6 +41,16 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-success: var(--success);
+  --color-streak: var(--streak);
+  --color-highlight-yellow: var(--highlight-yellow);
+  --color-highlight-green: var(--highlight-green);
+  --color-highlight-blue: var(--highlight-blue);
+  --color-highlight-pink: var(--highlight-pink);
+  --color-tag-amber: var(--tag-amber);
+  --color-tag-purple: var(--tag-purple);
+  --color-tag-blue: var(--tag-blue);
+  --color-tag-green: var(--tag-green);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -91,6 +102,19 @@
   --sidebar-accent-foreground: #0F172A;
   --sidebar-border: #E2E8F0;
   --sidebar-ring: #1E3A8A;
+  /* Estados y racha */
+  --success: #16A34A;
+  --streak: #EA580C;
+  /* Resaltados de versículos (swatch sólido; en el texto se usan con opacidad) */
+  --highlight-yellow: #FDE047;
+  --highlight-green: #86EFAC;
+  --highlight-blue: #93C5FD;
+  --highlight-pink: #F9A8D4;
+  /* Etiquetas de plan (usar como text-tag-x + bg-tag-x/10) */
+  --tag-amber: #B45309;
+  --tag-purple: #7E22CE;
+  --tag-blue: #1D4ED8;
+  --tag-green: #15803D;
 }
 
 .dark {
@@ -132,6 +156,19 @@
   --sidebar-accent-foreground: #F8FAFC;
   --sidebar-border: #334155;
   --sidebar-ring: #3B82F6;
+  /* Estados y racha */
+  --success: #4ADE80;
+  --streak: #FB923C;
+  /* Resaltados de versículos */
+  --highlight-yellow: #CA8A04;
+  --highlight-green: #16A34A;
+  --highlight-blue: #2563EB;
+  --highlight-pink: #DB2777;
+  /* Etiquetas de plan */
+  --tag-amber: #FBBF24;
+  --tag-purple: #C084FC;
+  --tag-blue: #60A5FA;
+  --tag-green: #4ADE80;
 }
 
 /* Safe areas para iPhone con notch */

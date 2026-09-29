@@ -29,7 +29,7 @@ export default async function PlanesPage() {
       <div className="grid gap-3 sm:gap-4">
         {plans.map((plan) => (
           <Link key={plan.id} href={`/plan/${plan.slug}`} className="block">
-            <Card className="transition-colors hover:bg-accent/50 active:scale-[0.99]">
+            <Card className="transition-colors hover:bg-muted/50 active:scale-[0.99]">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <BookMarked className="h-5 w-5 text-primary shrink-0" />

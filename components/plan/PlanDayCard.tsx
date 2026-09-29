@@ -19,10 +19,10 @@ interface PlanDayCardProps {
 
 // Etiquetas por posición de la lectura
 const TRACK_LABELS = [
-  { label: "AT Histórico", color: "bg-amber-500/10 text-amber-700 dark:text-amber-400" },
-  { label: "Poéticos/Profetas", color: "bg-purple-500/10 text-purple-700 dark:text-purple-400" },
-  { label: "Nuevo Testamento", color: "bg-blue-500/10 text-blue-700 dark:text-blue-400" },
-  { label: "Salmos", color: "bg-green-500/10 text-green-700 dark:text-green-400" },
+  { label: "AT Histórico", color: "bg-tag-amber/10 text-tag-amber" },
+  { label: "Poéticos/Profetas", color: "bg-tag-purple/10 text-tag-purple" },
+  { label: "Nuevo Testamento", color: "bg-tag-blue/10 text-tag-blue" },
+  { label: "Salmos", color: "bg-tag-green/10 text-tag-green" },
 ];
 
 export function PlanDayCard({
@@ -60,7 +60,7 @@ export function PlanDayCard({
             {isCompleted && (
               <Badge
                 variant="outline"
-                className="text-xs text-green-600 border-green-600/30 bg-green-500/10"
+                className="text-xs text-success border-success/30 bg-success/10"
               >
                 Completado
               </Badge>
@@ -87,7 +87,7 @@ export function PlanDayCard({
             <Link
               key={i}
               href={`/leer/${p.book}/${p.chapter}`}
-              className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-accent transition-colors group"
+              className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted transition-colors group"
             >
               <BookOpen className="h-4 w-4 text-muted-foreground shrink-0 group-hover:text-primary transition-colors" />
               <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
