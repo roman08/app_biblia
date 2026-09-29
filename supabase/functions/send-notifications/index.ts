@@ -179,12 +179,14 @@ async function encryptPayload(
   const prk = await hkdfExtract(authSecret, new Uint8Array(sharedSecret));
   const ikm = await hkdfExpand(prk, authInfo, 32);
 
-  // 6. Derivar CEK y Nonce (RFC 8188)
+  // 6. Derivar CEK y Nonce (RFC 8188): extract con el salt antes del expand
+  const contentPrk = await hkdfExtract(salt, ikm);
+
   const cekInfo = new TextEncoder().encode("Content-Encoding: aes128gcm\0");
   const nonceInfo = new TextEncoder().encode("Content-Encoding: nonce\0");
 
-  const cek = await hkdfExpand(ikm, cekInfo, 16);
-  const nonce = await hkdfExpand(ikm, nonceInfo, 12);
+  const cek = await hkdfExpand(contentPrk, cekInfo, 16);
+  const nonce = await hkdfExpand(contentPrk, nonceInfo, 12);
 
   // 7. Header aes128gcm: salt(16) + rs(4) + idlen(1) + key(65)
   const recordSize = 4096;
