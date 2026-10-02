@@ -1,7 +1,12 @@
 import { ImageResponse } from "next/og";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { SITE_NAME } from "@/lib/site";
+import {
+  GEIST_400,
+  GEIST_600,
+  GELASIO_400,
+  GELASIO_600,
+  ICON_PNG,
+} from "@/lib/og/og-assets";
 
 // Imagen para Open Graph (WhatsApp, Facebook, X, Telegram, iMessage…).
 // Se dibuja con Satori: solo flexbox y un subconjunto de CSS; todo <div> con
@@ -16,15 +21,20 @@ const BLUE = "#1E3A8A";
 const GOLD = "#D4A574";
 const MUTED = "#94A3B8";
 
-// Fuentes y logo: se leen una sola vez por proceso.
+// Fuentes y logo incrustados en base64 (lib/og/og-assets.ts, generado por
+// scripts/generate-og-assets.ts). No leer archivos con fs: en Netlify la
+// función serverless no incluye assets/ ni public/ y la imagen daba HTTP 500.
 // Gelasio (OFL) tiene las métricas de Georgia, la fuente del lector.
-const assets = Promise.all([
-  readFile(join(process.cwd(), "assets/fonts/gelasio-latin-400-normal.woff")),
-  readFile(join(process.cwd(), "assets/fonts/gelasio-latin-600-normal.woff")),
-  readFile(join(process.cwd(), "assets/fonts/geist-latin-400-normal.woff")),
-  readFile(join(process.cwd(), "assets/fonts/geist-latin-600-normal.woff")),
-  readFile(join(process.cwd(), "public/icons/icon-192.png"), "base64"),
-]);
+const fromBase64 = (b64: string) => {
+  const buf = Buffer.from(b64, "base64");
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+};
+const fonts = {
+  serif: fromBase64(GELASIO_400),
+  serifBold: fromBase64(GELASIO_600),
+  sans: fromBase64(GEIST_400),
+  sansBold: fromBase64(GEIST_600),
+};
 
 interface OgCardProps {
   /** Texto pequeño en dorado arriba, p. ej. "Versículo del día" */
@@ -49,7 +59,7 @@ function quoteFontSize(text: string) {
 }
 
 export async function renderOgCard({ eyebrow, title, quote, body, footer }: OgCardProps) {
-  const [serif, serifBold, sans, sansBold, iconBase64] = await assets;
+  const { serif, serifBold, sans, sansBold } = fonts;
 
   return new ImageResponse(
     (
@@ -141,7 +151,7 @@ export async function renderOgCard({ eyebrow, title, quote, body, footer }: OgCa
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             {/* eslint-disable-next-line @next/next/no-img-element -- Satori solo acepta <img> */}
             <img
-              src={`data:image/png;base64,${iconBase64}`}
+              src={`data:image/png;base64,${ICON_PNG}`}
               width={52}
               height={52}
               style={{ borderRadius: 12 }}
