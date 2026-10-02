@@ -9,7 +9,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, StickyNote, BookMarked, BarChart3, Heart } from "lucide-react";
+import {
+  LogOut,
+  User,
+  StickyNote,
+  BookMarked,
+  BarChart3,
+  Heart,
+  Download,
+} from "lucide-react";
 
 export async function UserNav() {
   const supabase = await createClient();
@@ -67,6 +75,17 @@ export async function UserNav() {
             >
               <Heart className="h-4 w-4" />
               Favoritos
+            </Link>
+          }
+        />
+        <DropdownMenuItem
+          render={
+            <Link
+              href="/descargas"
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <Download className="h-4 w-4" />
+              Lectura sin conexión
             </Link>
           }
         />

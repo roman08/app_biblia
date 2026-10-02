@@ -35,6 +35,8 @@ interface VerseActionsProps {
   isFavorite: boolean;
   /** El navegador soporta lectura en voz alta */
   canListen: boolean;
+  /** Versión del texto, p. ej. "RVG" */
+  versionShortName: string;
   isAuthenticated: boolean;
   children: React.ReactNode;
 }
@@ -49,6 +51,7 @@ export function VerseActions({
   currentNote,
   isFavorite,
   canListen,
+  versionShortName,
   isAuthenticated,
   children,
 }: VerseActionsProps) {
@@ -73,7 +76,7 @@ export function VerseActions({
           nowFavorite ? "Agregado a favoritos" : "Quitado de favoritos"
         );
       } catch {
-        toast.error("No se pudo guardar el favorito. Intenta de nuevo.");
+        offlineError();
       }
     });
   };
@@ -83,23 +86,39 @@ export function VerseActions({
     playFromVerse(verse);
   };
 
+  // Sin conexión las server actions fallan; avisamos en lugar de romper la página
+  const offlineError = () =>
+    toast.error(
+      navigator.onLine
+        ? "No se pudo guardar. Intenta de nuevo."
+        : "Sin conexión. Podrás guardarlo cuando vuelva la red."
+    );
+
   const handleHighlight = (color: string | null) => {
     startTransition(async () => {
-      await upsertHighlight(book, chapter, verse, color);
-      setOpen(false);
+      try {
+        await upsertHighlight(book, chapter, verse, color);
+        setOpen(false);
+      } catch {
+        offlineError();
+      }
     });
   };
 
   const handleSaveNote = () => {
     startTransition(async () => {
-      await upsertNote(book, chapter, verse, noteText);
-      setOpen(false);
-      setMode("menu");
+      try {
+        await upsertNote(book, chapter, verse, noteText);
+        setOpen(false);
+        setMode("menu");
+      } catch {
+        offlineError();
+      }
     });
   };
 
   const buildShareText = () => {
-    return `"${verseText}"\n\n— ${reference} (RVR1960)`;
+    return `"${verseText}"\n\n— ${reference} (${versionShortName})`;
   };
 
   const buildShareUrl = () => {

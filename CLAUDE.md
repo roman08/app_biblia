@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 📖 Descripción del Proyecto
 
-**Biblia App**: webapp (PWA) para leer y estudiar la Biblia. Lector RVR1960, planes de lectura, notas/resaltados, favoritos, racha de lectura, compartir versículos como imagen y recordatorios push.
+**Biblia App**: webapp (PWA) para leer y estudiar la Biblia. Lector con Reina-Valera Gómez 2010 (RVG) por defecto, planes de lectura, notas/resaltados, favoritos, racha de lectura, compartir versículos como imagen y recordatorios push.
 
 Pendiente: deploy a Vercel (prioridad alta), buscador de versículos (aún no existe `app/buscar/` ni un parser de referencias), onboarding.
 
@@ -26,6 +26,7 @@ npm start
 npm run lint     # eslint (flat config en eslint.config.mjs)
 npx tsx scripts/generate-plan.ts   # genera un plan de lectura
 npx tsx scripts/import-plan.ts     # importa un plan (mapea nombres de libros en inglés a slugs)
+npx tsx scripts/validate-books.ts  # valida BOOKS, géneros y cada lectura de los planes en Supabase
 ```
 
 No hay suite de tests. Para verificar cambios usa `npm run lint` y `npm run build`.
@@ -37,7 +38,7 @@ Reglas:
 3. Reinicia el servidor después de cambiar `next.config.ts`.
 4. Usa siempre `localhost:3000`. Con túneles u otros orígenes falla con "Invalid Server Actions request".
 
-Variables de entorno (`.env.local`): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (esta última solo para `scripts/` y la edge function).
+Variables de entorno (`.env.local`): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (esta última solo para `scripts/` y la edge function) y, opcional, `NEXT_PUBLIC_SITE_URL` (dominio público para Open Graph).
 
 ## 🏗️ Arquitectura
 
@@ -45,8 +46,12 @@ Variables de entorno (`.env.local`): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SU
 
 - Midvash API: `GET https://api.midvash.com/v1/{version}/{book}/{chapter}`. Se cachea con `next: { revalidate: 86400 }`.
 - La respuesta `data.verses` es un **array de strings**; el número de versículo es índice + 1. `getChapter()` lo normaliza a `{ verse, text }[]`.
+- **Etiquetas de libro:** el testamento y el género ("AT · Poéticos") salen siempre del libro, con `getBookTag()` de [lib/book-categories.ts](lib/book-categories.ts). **Nunca** de la posición de la lectura en el día: antes eso etiquetaba mal el 37% de las lecturas del plan anual. Después de tocar `BOOKS`, los géneros o un plan, corre `scripts/validate-books.ts`.
 - `BOOKS` es la fuente de verdad de los slugs en español (`genesis`, `1-samuel`, `cantares`…) y del número de capítulos. Rutas, planes y scripts deben usar estos slugs.
-- `VERSIONS` usa los slugs de Midvash: `rvr1960`, `nvies`, `ntv` y `rvr1909`. **Ojo:** en Midvash, `nvi` es la NVI en portugués; la NVI en español es `nvies`. `GET /v1/versions` lista todas.
+- **Versiones:** `VERSIONS` usa los slugs de Midvash: `rvg` (por defecto, `DEFAULT_VERSION`), `rvr1909`, `pdt` y `onbv-es`. `GET /v1/versions` lista todas.
+- **No escribas `"rvg"` a mano:** usa `DEFAULT_VERSION`, y para leer `?v=` usa `parseVersion()`. Un valor desconocido, como el antiguo `rvr1960`, cae en la versión por defecto.
+- **Versiones retiradas:** desde oct. 2026 Midvash ya no tiene la RVR1960, la NTV ni la NVI. Si se piden, responde con otra versión sin avisar (`rvr1960` → `rvr1909`, `ntv` → `onbv-es`, `nvies` → `pdt`). Para mostrar la versión, usa siempre la que devolvió la API (`ChapterData.version` con `versionLabel()`), no la que pediste. Se eligió la RVG como la más cercana a la RVR1960.
+- **Aviso de derechos:** `ChapterData.copyright` (de `meta.copyright`) se muestra al final del capítulo y en `/v`. Es obligatorio: la RVG solo permite uso gratuito, sin fines de lucro y sin cambiar palabras, y la ONBV es CC BY-SA y exige atribución. Si la app cobra o tiene anuncios, la RVG requiere permiso de su autor.
 - Midvash devuelve `book` y `bookName` en inglés ("john", "John"). Muestra siempre `getBook(slug).name`; `getChapter()` ya lo hace.
 - Para varios versículos sueltos usa `getPassages()` (`/v1/passages`, 50 referencias por llamada), no un `getChapter` por versículo. Midvash no tiene búsqueda por texto.
 
@@ -74,6 +79,24 @@ Las escrituras pasan por Server Actions en `lib/supabase/*-actions.ts` (`"use se
 - `components/providers/TimezoneSync.tsx` guarda la zona del navegador en la cookie `tz`.
 - En el servidor, `getUserToday()` y `getUserTimeZone()` de [lib/timezone.ts](lib/timezone.ts) la leen (por defecto `America/Mexico_City`).
 - Para operar con fechas `YYYY-MM-DD` usa `addDays` y `daysBetween` de [lib/dates.ts](lib/dates.ts).
+
+### Modo sin conexión
+
+- **Caché de capítulos:** en `next.config.ts`, `workboxOptions.runtimeCaching` tiene reglas propias que van antes de las de next-pwa (`extendDefaultRuntimeCaching`). Los capítulos (`/leer/{book}/{n}`, solo el documento, no el RSC) se guardan en la caché `bible-chapters`: NetworkFirst, 5 s de timeout, 1 año. La regla `pages` (solo `mode === "navigate"`) reemplaza a la de next-pwa y amplía su caché a 64 entradas por 30 días.
+- **Las funciones de `urlPattern` se serializan dentro de `sw.js`,** así que no pueden usar variables de fuera de la función.
+- **Página de respaldo:** `app/~offline/page.tsx` la detecta next-pwa sola, se precachea y se muestra si no hay red ni caché.
+- **Descargas:** `/descargas` guarda libros completos con la Cache API ([lib/offline/chapter-cache.ts](lib/offline/chapter-cache.ts)), en la misma caché `bible-chapters`.
+- **URLs de capítulo:** genéralas con `chapterHref()`. La versión por defecto va sin `?v=`, para que cada capítulo tenga una sola URL en la caché.
+- **Server actions:** sin red fallan. Envuélvelas en `try/catch` con un toast; un error dentro de `startTransition` llega al error boundary y rompe la página.
+- **Probar:** solo funciona con `npm run build && npm start` (en dev la PWA está desactivada). En DevTools → Network → Offline.
+
+### Open Graph (vista previa al compartir)
+
+- **URL base:** `metadataBase` sale de `getSiteUrl()` en [lib/site.ts](lib/site.ts): primero `NEXT_PUBLIC_SITE_URL`, si no, las variables `URL`/`DEPLOY_PRIME_URL` de Netlify.
+- **Metadatos de páginas públicas:** usa `pageMetadata()` de `lib/site.ts`. Incluye título, descripción, canonical, `openGraph` (con `siteName` y `locale`, porque el `openGraph` de una página reemplaza por completo al del layout) y la tarjeta grande de X.
+- **Imágenes (1200×630):** las generan los `opengraph-image.tsx` de `app/`, `v/[book]/[chapter]/[verse]`, `leer/[book]/[chapter]` y `plan/[slug]`, con `renderOgCard()` de [lib/og/og-card.tsx](lib/og/og-card.tsx). Las fuentes están en `assets/fonts/`: Gelasio (métricas de Georgia) y Geist en `.woff`, porque Satori no lee woff2. Las fuentes propias reemplazan a las de `next/og`.
+- **`ownImage`:** si el segmento tiene su propio `opengraph-image.tsx`, pasa `ownImage: true`. La clave `images` tiene que faltar del todo: tanto `images: [...]` como `images: undefined` le ganan al archivo.
+- **Proxy:** `proxy.ts` excluye `opengraph-image` de su `matcher`, así que esas peticiones no pasan por la sesión de Supabase.
 
 ### Push notifications (tres piezas)
 

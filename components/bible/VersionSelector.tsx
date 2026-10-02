@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { VERSIONS, type VersionKey } from "@/lib/bible-api";
+import { DEFAULT_VERSION, VERSIONS, type VersionKey } from "@/lib/bible-api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +22,9 @@ export function VersionSelector({ current }: VersionSelectorProps) {
 
   const handleSelect = (version: VersionKey) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("v", version);
+    // La versión por defecto va sin ?v= (una sola URL por capítulo)
+    if (version === DEFAULT_VERSION) params.delete("v");
+    else params.set("v", version);
     router.push(`${pathname}?${params.toString()}`);
   };
 

@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import Link from "next/link";
-import { BOOKS } from "@/lib/bible-api";
+import { BOOKS, DEFAULT_VERSION, VERSIONS } from "@/lib/bible-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Explorar la Biblia",
+  description: "Los 66 libros de la Biblia Reina-Valera, del Génesis al Apocalipsis.",
+  path: "/leer",
+});
 
 export default function LeerPage() {
   const oldTestament = BOOKS.filter((b) => b.testament === "OT");
@@ -19,8 +27,15 @@ export default function LeerPage() {
       </Link>
       <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Explorar la Biblia</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Reina Valera 1960 · Elige un libro
+        {VERSIONS[DEFAULT_VERSION].name} · Elige un libro
       </p>
+      <Link
+        href="/descargas"
+        className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+      >
+        <Download className="h-4 w-4" />
+        Descargar libros para leer sin conexión
+      </Link>
     </div>
 
     <div className="space-y-4">

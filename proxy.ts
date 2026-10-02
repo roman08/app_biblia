@@ -45,6 +45,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|icons|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // Las imágenes de Open Graph las piden WhatsApp, Facebook, etc.: no necesitan sesión
+    "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|icons|.*opengraph-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

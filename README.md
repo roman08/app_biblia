@@ -1,10 +1,10 @@
 # 📖 Biblia App
 
-Webapp moderna para leer, meditar y estudiar la Palabra de Dios. Incluye lector bíblico (RVR1960), planes de lectura, notas personales, estadísticas y compartir versículos.
+Webapp moderna para leer, meditar y estudiar la Palabra de Dios. Incluye lector bíblico (Reina-Valera Gómez 2010 y otras versiones), planes de lectura, notas personales, estadísticas y compartir versículos.
 
 ## ✨ Funcionalidades
 
-- 📖 **Lector bíblico** con Reina Valera 1960
+- 📖 **Lector bíblico** con Reina-Valera Gómez 2010, Reina-Valera 1909, PDT y ONBV
 - 🎯 **Planes de lectura** con progreso persistente
 - 📝 **Notas y resaltados** por versículo
 - 🔐 **Autenticación** con Google y GitHub
@@ -30,7 +30,7 @@ Webapp moderna para leer, meditar y estudiar la Palabra de Dios. Incluye lector 
 | **Supabase** | 2.117.1 | Auth + PostgreSQL |
 | **lucide-react** | 0.468.0 | Iconos |
 | **next-pwa** | 10.2.9 | Soporte PWA |
-| **Midvash API** | — | Texto bíblico (RVR1960) |
+| **Midvash API** | — | Texto bíblico (RVG, RVR1909, PDT, ONBV) |
 
 ## 📋 Requisitos Previos
 

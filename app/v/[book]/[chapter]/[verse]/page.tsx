@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { pageMetadata, truncate } from "@/lib/site";
 import Link from "next/link";
-import { getChapter, getBook } from "@/lib/bible-api";
+import { DEFAULT_VERSION, getChapter, getBook, versionLabel } from "@/lib/bible-api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, BookOpen } from "lucide-react";
@@ -24,7 +26,7 @@ export default async function VersePage({ params }: PageProps) {
 
   if (isNaN(chapter) || isNaN(verse)) notFound();
 
-  const data = await getChapter("rvr1960", bookSlug, chapter);
+  const data = await getChapter(DEFAULT_VERSION, bookSlug, chapter);
   const verseData = data.verses.find((v) => v.verse === verse);
   if (!verseData) notFound();
 
@@ -45,10 +47,10 @@ export default async function VersePage({ params }: PageProps) {
 
           <blockquote className="space-y-4">
             <p className="text-2xl leading-relaxed font-serif">
-              "{verseData.text}"
+              “{verseData.text}”
             </p>
             <footer className="text-sm font-semibold text-primary">
-              — {reference} (RVR1960)
+              — {reference} ({versionLabel(data.version).shortName})
             </footer>
           </blockquote>
 
@@ -65,30 +67,40 @@ export default async function VersePage({ params }: PageProps) {
           </div>
         </CardContent>
       </Card>
+
+      {data.copyright && (
+        <p className="mt-6 whitespace-pre-line text-xs leading-relaxed text-muted-foreground">
+          {data.copyright}
+        </p>
+      )}
     </div>
   );
 }
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { book: bookSlug, chapter, verse } = await params;
   const book = getBook(bookSlug);
   if (!book) return { title: "Versículo no encontrado" };
 
-  const data = await getChapter("rvr1960", bookSlug, parseInt(chapter, 10));
-  const verseData = data.verses.find((v) => v.verse === parseInt(verse, 10));
+  const data = await getChapter(DEFAULT_VERSION, bookSlug, parseInt(chapter, 10)).catch(
+    () => undefined
+  );
+  const verseData = data?.verses.find((v) => v.verse === parseInt(verse, 10));
 
   const reference = `${book.name} ${chapter}:${verse}`;
-  const preview = verseData?.text
-    ? verseData.text.slice(0, 100) + (verseData.text.length > 100 ? "..." : "")
-    : "";
+  // La versión que devolvió la API (Midvash puede sustituir la pedida)
+  const title = data ? `${reference} (${versionLabel(data.version).shortName})` : reference;
+  // WhatsApp y Facebook muestran ~2 líneas: el texto completo va en la imagen
+  const description = verseData?.text
+    ? truncate(verseData.text, 200)
+    : `Lee ${reference} en la Biblia Reina-Valera.`;
 
-  return {
-    title: `${reference} · Biblia App`,
-    description: preview,
-    openGraph: {
-      title: reference,
-      description: preview,
-      type: "article",
-    },
-  };
+  // La imagen la genera ./opengraph-image.tsx con el texto del versículo
+  return pageMetadata({
+    title,
+    description,
+    path: `/v/${bookSlug}/${chapter}/${verse}`,
+    type: "article",
+    ownImage: true,
+  });
 }

@@ -17,6 +17,8 @@ interface VerseListProps {
   chapter: number;
   notes: Note[];
   favoriteVerses: number[];
+  /** Versión que devolvió la API, p. ej. "RVG" (para el texto al compartir) */
+  versionShortName: string;
   isAuthenticated: boolean;
 }
 
@@ -27,6 +29,7 @@ export function VerseList({
   chapter,
   notes,
   favoriteVerses,
+  versionShortName,
   isAuthenticated,
 }: VerseListProps) {
   const { fontSizeClass, mounted } = useFontSize();
@@ -82,6 +85,7 @@ export function VerseList({
             currentNote={note?.content ?? null}
             isFavorite={isFavorite}
             canListen={speech.supported}
+            versionShortName={versionShortName}
             isAuthenticated={isAuthenticated}
           >
             <p

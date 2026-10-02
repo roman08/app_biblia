@@ -1,11 +1,14 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { pageMetadata, truncate } from "@/lib/site";
 import Link from "next/link";
 import { Suspense } from "react";
 import {
   getChapter,
   getBook,
-  type VersionKey,
-  VERSIONS,
+  chapterHref,
+  parseVersion,
+  versionLabel,
 } from "@/lib/bible-api";
 import { createClient } from "@/lib/supabase/server";
 import { getNotesForChapter } from "@/lib/supabase/notes-actions";
@@ -34,7 +37,7 @@ interface PageProps {
 export default async function ChapterPage({ params, searchParams }: PageProps) {
   const { book: bookSlug, chapter: chapterStr } = await params;
   const { v } = await searchParams;
-  const version = (v && v in VERSIONS ? v : "rvr1960") as VersionKey;
+  const version = parseVersion(v);
 
   const book = getBook(bookSlug);
   if (!book) notFound();
@@ -137,21 +140,47 @@ export default async function ChapterPage({ params, searchParams }: PageProps) {
             chapter={chapter}
             notes={notes}
             favoriteVerses={favoriteVerses}
+            versionShortName={versionLabel(data.version).shortName}
             isAuthenticated={!!user}
           />
+
+          {/* Aviso de derechos de la versión (lo exigen la RVG y la ONBV) */}
+          {data.copyright && (
+            <p className="mt-10 whitespace-pre-line border-t pt-4 text-xs leading-relaxed text-muted-foreground">
+              {data.copyright}
+            </p>
+          )}
         </article>
       </div>
     </FocusModeLayout>
   );
 }
 
-export async function generateMetadata({ params, searchParams }: PageProps) {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { book: bookSlug, chapter } = await params;
   const { v } = await searchParams;
-  const version = (v && v in VERSIONS ? v : "rvr1960") as VersionKey;
+  const version = parseVersion(v);
   const book = getBook(bookSlug);
   if (!book) return { title: "No encontrado" };
-  return {
-    title: `${book.name} ${chapter} · ${VERSIONS[version].shortName}`,
-  };
+
+  const chapterNumber = parseInt(chapter, 10);
+  // Misma llamada que la página: fetch la deduplica y la cachea
+  const data = await getChapter(version, bookSlug, chapterNumber).catch(() => undefined);
+  const firstVerse = data?.verses[0]?.text;
+  // La versión que devolvió la API (puede no ser la pedida)
+  const label = versionLabel(data?.version ?? version);
+
+  const title = `${book.name} ${chapter} · ${label.shortName}`;
+  const description = firstVerse
+    ? `${chapter}:1 ${truncate(firstVerse, 180)}`
+    : `Lee ${book.name} ${chapter} en la ${label.name}.`;
+
+  // La imagen la genera ./opengraph-image.tsx
+  return pageMetadata({
+    title,
+    description,
+    path: chapterHref(bookSlug, chapterNumber, version),
+    type: "article",
+    ownImage: true,
+  });
 }

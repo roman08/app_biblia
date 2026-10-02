@@ -1,4 +1,9 @@
-import { getChapter, type VersionKey } from "@/lib/bible-api";
+import {
+  DEFAULT_VERSION,
+  getChapter,
+  versionLabel,
+  type VersionKey,
+} from "@/lib/bible-api";
 import { getUserToday } from "@/lib/timezone";
 
 // Lista curada de versículos icónicos para el "versículo del día"
@@ -42,6 +47,8 @@ export interface VerseOfDay {
   chapter: number;
   verse: number;
   text: string;
+  /** Versión que devolvió la API, p. ej. "RVG" */
+  versionShortName: string;
 }
 
 /**
@@ -55,7 +62,7 @@ function getDailyIndex(today: string, total: number): number {
 }
 
 export async function getVerseOfDay(
-  version: VersionKey = "rvr1960"
+  version: VersionKey = DEFAULT_VERSION
 ): Promise<VerseOfDay | null> {
   // Cambia a medianoche en la hora del usuario, no en UTC
   const index = getDailyIndex(await getUserToday(), VERSE_POOL.length);
@@ -72,6 +79,7 @@ export async function getVerseOfDay(
       chapter: ref.chapter,
       verse: ref.verse,
       text: verse.text,
+      versionShortName: versionLabel(chapter.version).shortName,
     };
   } catch {
     return null;

@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, BookOpen } from "lucide-react";
 import { toggleDayCompleted } from "@/lib/supabase/plans-actions";
-import { getBook } from "@/lib/bible-api";
+import { chapterHref, getBook } from "@/lib/bible-api";
+import { getBookTag } from "@/lib/book-categories";
 import type { PlanDay } from "@/lib/supabase/plans-actions";
 
 interface PlanDayCardProps {
@@ -16,14 +17,6 @@ interface PlanDayCardProps {
   isCompleted: boolean;
   isToday: boolean;
 }
-
-// Etiquetas por posición de la lectura
-const TRACK_LABELS = [
-  { label: "AT Histórico", color: "bg-tag-amber/10 text-tag-amber" },
-  { label: "Poéticos/Profetas", color: "bg-tag-purple/10 text-tag-purple" },
-  { label: "Nuevo Testamento", color: "bg-tag-blue/10 text-tag-blue" },
-  { label: "Salmos", color: "bg-tag-green/10 text-tag-green" },
-];
 
 export function PlanDayCard({
   planId,
@@ -81,12 +74,14 @@ export function PlanDayCard({
       <CardContent className="space-y-3">
         {day.passages.map((p, i) => {
           const book = getBook(p.book);
-          const track = TRACK_LABELS[i] ?? TRACK_LABELS[0];
+          // La etiqueta sale del libro, nunca de la posición de la lectura:
+          // el orden y la cantidad de lecturas por día cambian según el plan.
+          const tag = getBookTag(p.book);
 
           return (
             <Link
               key={i}
-              href={`/leer/${p.book}/${p.chapter}`}
+              href={chapterHref(p.book, p.chapter)}
               className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-muted transition-colors group"
             >
               <BookOpen className="h-4 w-4 text-muted-foreground shrink-0 group-hover:text-primary transition-colors" />
@@ -94,11 +89,14 @@ export function PlanDayCard({
                 <span className="text-sm font-medium truncate">
                   {book?.name ?? p.book} {p.chapter}
                 </span>
-                <span
-                  className={`text-[10px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded ${track.color}`}
-                >
-                  {track.label}
-                </span>
+                {tag && (
+                  <span
+                    className={`shrink-0 text-[10px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded ${tag.className}`}
+                    title={tag.testament === "OT" ? "Antiguo Testamento" : "Nuevo Testamento"}
+                  >
+                    {tag.testamentShort} · {tag.category}
+                  </span>
+                )}
               </div>
             </Link>
           );

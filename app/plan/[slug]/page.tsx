@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { pageMetadata } from "@/lib/site";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -13,6 +15,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const result = await getPlanBySlug(slug).catch(() => null);
+  if (!result) return { title: "Plan no encontrado" };
+
+  const { plan } = result;
+
+  // La imagen la genera ./opengraph-image.tsx
+  return pageMetadata({
+    title: `${plan.name} · Plan de lectura`,
+    description:
+      plan.description ?? `Plan de lectura de la Biblia en ${plan.total_days} días.`,
+    path: `/plan/${slug}`,
+    ownImage: true,
+  });
 }
 
 export default async function PlanPage({ params }: PageProps) {

@@ -1,15 +1,37 @@
 const BASE = "https://api.midvash.com/v1";
 
-// Las claves son los slugs de Midvash. Ojo: en Midvash `nvi` es la NVI en
-// portugués; la NVI en español es `nvies`.
+// Versiones en español que Midvash sirve de verdad (oct. 2026). Las claves son
+// sus slugs. Midvash retiró la RVR1960, NTV y NVI: si se piden, responde con
+// otra versión sin avisar (rvr1960 → rvr1909, ntv → onbv-es, nvies → pdt).
 export const VERSIONS = {
-  rvr1960: { name: "Reina Valera 1960", shortName: "RVR1960" },
-  nvies:   { name: "Nueva Versión Internacional", shortName: "NVI" },
-  ntv:     { name: "Nueva Traducción Viviente", shortName: "NTV" },
-  rvr1909: { name: "Reina Valera 1909", shortName: "RVR1909" },
+  rvg:       { name: "Reina-Valera Gómez 2010", shortName: "RVG" },
+  rvr1909:   { name: "Reina-Valera 1909", shortName: "RVR1909" },
+  pdt:       { name: "Palabra de Dios para ti", shortName: "PDT" },
+  "onbv-es": { name: "Open Nueva Biblia Viva", shortName: "ONBV" },
 } as const;
 
 export type VersionKey = keyof typeof VERSIONS;
+
+/** Versión por defecto: la más cercana a la RVR1960 de las disponibles. */
+export const DEFAULT_VERSION: VersionKey = "rvg";
+
+/** Valida el `?v=` de la URL; cualquier otro valor (p. ej. el antiguo `rvr1960`) usa la versión por defecto. */
+export function parseVersion(v: string | undefined | null): VersionKey {
+  return v && v in VERSIONS ? (v as VersionKey) : DEFAULT_VERSION;
+}
+
+/**
+ * Nombre de la versión que Midvash devolvió de verdad (`ChapterData.version`).
+ * Usar esto (y no la versión pedida) para mostrarla: Midvash puede sustituirla.
+ */
+export function versionLabel(slug: string): { name: string; shortName: string } {
+  return (
+    (VERSIONS as Record<string, { name: string; shortName: string }>)[slug] ?? {
+      name: slug.toUpperCase(),
+      shortName: slug.toUpperCase(),
+    }
+  );
+}
 
 export interface Verse {
   verse: number;
@@ -23,6 +45,8 @@ export interface ChapterData {
   chapter: number;
   reference: string;
   verses: Verse[];
+  /** Aviso de derechos de la versión (Midvash `meta.copyright`), para mostrarlo */
+  copyright: string | null;
 }
 
 export const BOOKS = [
@@ -98,6 +122,15 @@ export const BOOKS = [
 
 export type BookSlug = (typeof BOOKS)[number]["slug"];
 
+/**
+ * URL de un capítulo. La versión por defecto va sin `?v=` para que cada
+ * capítulo tenga una sola URL (así coincide con lo guardado sin conexión).
+ */
+export function chapterHref(book: string, chapter: number, version: VersionKey = DEFAULT_VERSION) {
+  const path = `/leer/${book}/${chapter}`;
+  return version === DEFAULT_VERSION ? path : `${path}?v=${version}`;
+}
+
 export function getBook(slug: string) {
   return BOOKS.find((b) => b.slug === slug);
 }
@@ -131,6 +164,7 @@ export async function getChapter(
     chapter: raw.chapter,
     reference: `${bookName} ${raw.chapter}`,
     verses,
+    copyright: json.meta?.copyright ?? null,
   };
 }
 export interface VerseRef {
@@ -148,7 +182,7 @@ const PASSAGES_BATCH = 50; // límite de Midvash por llamada
  */
 export async function getPassages(
   refs: VerseRef[],
-  version: VersionKey = "rvr1960"
+  version: VersionKey = DEFAULT_VERSION
 ): Promise<(string | null)[]> {
   const batches: VerseRef[][] = [];
   for (let i = 0; i < refs.length; i += PASSAGES_BATCH) {

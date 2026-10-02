@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/site";
 import Link from "next/link";
 import { getAllPlans } from "@/lib/supabase/plans-actions";
 import {
@@ -8,6 +10,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { BookMarked } from "lucide-react";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Planes de lectura",
+  description: "Planes para leer la Biblia día a día, con tu progreso guardado.",
+  path: "/planes",
+});
 
 export default async function PlanesPage() {
   const plans = await getAllPlans();

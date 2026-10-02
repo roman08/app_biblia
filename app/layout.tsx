@@ -6,10 +6,12 @@ import "./globals.css";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { UserNav } from "@/components/layout/UserNav";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
+import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { TimezoneSync } from "@/components/providers/TimezoneSync";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Toaster } from "@/components/ui/sonner";
+import { OG_DEFAULTS, SITE_DESCRIPTION, SITE_NAME, getSiteUrl } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,11 +24,27 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // Base para las URLs absolutas de Open Graph (ver lib/site.ts)
+  metadataBase: getSiteUrl(),
   title: {
-    default: "Biblia App",
-    template: "%s · Biblia App",
+    default: SITE_NAME,
+    template: `%s · ${SITE_NAME}`,
   },
-  description: "Lee, medita y estudia la Palabra de Dios",
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  // Valores por defecto para páginas sin metadatos propios (sin `url`, para
+  // que no apunten al inicio). La imagen la genera app/opengraph-image.tsx.
+  // Las páginas públicas usan pageMetadata() de lib/site.ts.
+  openGraph: {
+    ...OG_DEFAULTS,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -102,6 +120,7 @@ export default function RootLayout({
             </div>
           </header>
 
+          <OfflineBanner />
           <main>{children}</main>
           <BottomNav />
           <Toaster />

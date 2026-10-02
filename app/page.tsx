@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { SITE_DESCRIPTION, SITE_NAME, pageMetadata } from "@/lib/site";
 import { Suspense } from "react";
 import { getVerseOfDay } from "@/lib/verse-of-day";
 import { getReadingStats } from "@/lib/supabase/stats-actions";
@@ -17,6 +19,12 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
+export const metadata: Metadata = {
+  ...pageMetadata({ title: SITE_NAME, description: SITE_DESCRIPTION, path: "/", ownImage: true }),
+  // Sin la plantilla "%s · Biblia App" (quedaría "Biblia App · Biblia App")
+  title: { absolute: SITE_NAME },
+};
+
 const QUICK_LINKS = [
   { href: "/planes", label: "Planes", hint: "Lecturas guiadas", icon: BookMarked },
   { href: "/notas", label: "Notas", hint: "Resaltados", icon: StickyNote },
@@ -24,7 +32,7 @@ const QUICK_LINKS = [
 ];
 
 export default async function HomePage() {
-  const verseOfDay = await getVerseOfDay("rvr1960");
+  const verseOfDay = await getVerseOfDay();
   const stats = await getReadingStats();
 
   // Obtener el usuario

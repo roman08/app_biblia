@@ -74,7 +74,7 @@ export function VerseOfDayCard({
   };
 
   const buildShareText = () => {
-    return `"${verse.text}"\n\n— ${reference} (RVR1960)`;
+    return `"${verse.text}"\n\n— ${reference} (${verse.versionShortName})`;
   };
 
   const buildShareUrl = () => {

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BOOKS, type VersionKey } from "@/lib/bible-api";
+import { BOOKS, chapterHref, type VersionKey } from "@/lib/bible-api";
 
 interface ChapterNavProps {
   bookSlug: string;
@@ -32,7 +32,7 @@ export function ChapterNav({
       {/* Anterior */}
       <div className="flex-1">
         {prevChapter && (
-          <Link href={`/leer/${bookSlug}/${prevChapter}?v=${version}`}>
+          <Link href={chapterHref(bookSlug, prevChapter, version)}>
             <Button
               variant="outline"
               className="h-auto w-full flex-col items-start gap-0.5 py-2 text-left"
@@ -47,7 +47,7 @@ export function ChapterNav({
           </Link>
         )}
         {!prevChapter && prevBook && (
-          <Link href={`/leer/${prevBook.slug}/${prevBook.chapters}?v=${version}`}>
+          <Link href={chapterHref(prevBook.slug, prevBook.chapters, version)}>
             <Button
               variant="outline"
               className="h-auto w-full flex-col items-start gap-0.5 py-2 text-left"
@@ -66,7 +66,7 @@ export function ChapterNav({
       {/* Siguiente */}
       <div className="flex-1">
         {nextChapter && (
-          <Link href={`/leer/${bookSlug}/${nextChapter}?v=${version}`}>
+          <Link href={chapterHref(bookSlug, nextChapter, version)}>
             <Button
               variant="outline"
               className="h-auto w-full flex-col items-end gap-0.5 py-2 text-right"
@@ -81,7 +81,7 @@ export function ChapterNav({
           </Link>
         )}
         {!nextChapter && nextBook && (
-          <Link href={`/leer/${nextBook.slug}/1?v=${version}`}>
+          <Link href={chapterHref(nextBook.slug, 1, version)}>
             <Button
               variant="outline"
               className="h-auto w-full flex-col items-end gap-0.5 py-2 text-right"
