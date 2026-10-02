@@ -29,7 +29,7 @@ export default async function Image({
   return renderOgCard({
     eyebrow: book ? (book.testament === "OT" ? "Antiguo Testamento" : "Nuevo Testamento") : "Biblia",
     title: book ? `${book.name} ${chapter}` : "Leer la Biblia",
-    body: firstVerse ? `“${truncate(firstVerse, 150)}”` : undefined,
+    body: firstVerse ? `“${truncate(firstVerse, 120)}”` : undefined,
     footer,
   });
 }

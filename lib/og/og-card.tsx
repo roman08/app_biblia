@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { SITE_NAME } from "@/lib/site";
+import { SITE_NAME, truncate } from "@/lib/site";
 import {
   GEIST_400,
   GEIST_600,
@@ -49,17 +49,28 @@ interface OgCardProps {
   footer?: string;
 }
 
+// Zona segura: Facebook (sobre todo en el celular) recorta la vista previa a un
+// cuadrado del centro de 630×630, y WhatsApp/X la muestran completa a 1.91:1.
+// Todo el contenido va centrado en una columna más angosta que ese cuadrado,
+// así se ve completo en los dos formatos.
+const SAFE_WIDTH = 580;
+
+// Límites de texto para que siempre quepa en la zona segura
+const MAX_QUOTE = 260;
+const MAX_BODY = 140;
+
 /** Tamaño de letra de la cita según su largo, para que siempre quepa. */
 function quoteFontSize(text: string) {
-  if (text.length < 90) return 60;
-  if (text.length < 160) return 50;
-  if (text.length < 240) return 42;
-  if (text.length < 330) return 36;
-  return 31;
+  if (text.length < 70) return 44;
+  if (text.length < 130) return 38;
+  if (text.length < 200) return 33;
+  return 29;
 }
 
 export async function renderOgCard({ eyebrow, title, quote, body, footer }: OgCardProps) {
   const { serif, serifBold, sans, sansBold } = fonts;
+  const quoteText = quote ? truncate(quote, MAX_QUOTE) : undefined;
+  const bodyText = body ? truncate(body, MAX_BODY) : undefined;
 
   return new ImageResponse(
     (
@@ -69,7 +80,8 @@ export async function renderOgCard({ eyebrow, title, quote, body, footer }: OgCa
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          padding: "64px 72px",
+          alignItems: "center",
+          padding: "48px 0",
           backgroundColor: NAVY,
           backgroundImage: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY} 45%, ${BLUE} 100%)`,
           color: "white",
@@ -77,15 +89,17 @@ export async function renderOgCard({ eyebrow, title, quote, body, footer }: OgCa
         }}
       >
         {/* Encabezado */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          <div style={{ width: 72, height: 6, borderRadius: 3, backgroundColor: GOLD }} />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 56, height: 5, borderRadius: 3, backgroundColor: GOLD }} />
           <div
             style={{
+              maxWidth: SAFE_WIDTH,
               fontFamily: "GeistBold",
-              fontSize: 26,
+              fontSize: 22,
               letterSpacing: 3,
               textTransform: "uppercase",
               color: GOLD,
+              textAlign: "center",
             }}
           >
             {eyebrow}
@@ -96,70 +110,66 @@ export async function renderOgCard({ eyebrow, title, quote, body, footer }: OgCa
         <div
           style={{
             flex: 1,
+            width: SAFE_WIDTH,
             display: "flex",
             flexDirection: "column",
+            alignItems: "center",
             justifyContent: "center",
-            gap: 24,
+            gap: 20,
+            textAlign: "center",
           }}
         >
           {title && (
             <div
               style={{
                 fontFamily: "GelasioBold",
-                fontSize: title.length > 24 ? 72 : 96,
-                lineHeight: 1.1,
+                fontSize: title.length > 14 ? 56 : 76,
+                lineHeight: 1.12,
               }}
             >
               {title}
             </div>
           )}
-          {quote && (
+          {quoteText && (
             <div
               style={{
                 display: "flex",
                 fontFamily: "Gelasio",
-                fontSize: quoteFontSize(quote),
-                lineHeight: 1.35,
+                fontSize: quoteFontSize(quoteText),
+                lineHeight: 1.4,
               }}
             >
-              {`“${quote}”`}
+              {`“${quoteText}”`}
             </div>
           )}
-          {body && (
+          {bodyText && (
             <div
               style={{
                 fontFamily: "Gelasio",
-                fontSize: 34,
+                fontSize: 26,
                 lineHeight: 1.4,
                 color: "rgba(255,255,255,0.78)",
               }}
             >
-              {body}
+              {bodyText}
             </div>
           )}
         </div>
 
         {/* Pie */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 24,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- Satori solo acepta <img> */}
-            <img
-              src={`data:image/png;base64,${ICON_PNG}`}
-              width={52}
-              height={52}
-              style={{ borderRadius: 12 }}
-              alt=""
-            />
-            <div style={{ fontFamily: "GeistBold", fontSize: 30 }}>{SITE_NAME}</div>
-          </div>
-          {footer && <div style={{ fontSize: 26, color: MUTED }}>{footer}</div>}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, maxWidth: SAFE_WIDTH }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- Satori solo acepta <img> */}
+          <img
+            src={`data:image/png;base64,${ICON_PNG}`}
+            width={40}
+            height={40}
+            style={{ borderRadius: 10 }}
+            alt=""
+          />
+          <div style={{ fontFamily: "GeistBold", fontSize: 24 }}>{SITE_NAME}</div>
+          {footer && (
+            <div style={{ fontSize: 22, color: MUTED }}>{`·  ${footer}`}</div>
+          )}
         </div>
       </div>
     ),
