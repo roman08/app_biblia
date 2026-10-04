@@ -17,6 +17,8 @@ import {
   BarChart3,
   Heart,
   Download,
+  NotebookPen,
+  HandHeart,
 } from "lucide-react";
 
 export async function UserNav() {
@@ -75,6 +77,22 @@ export async function UserNav() {
             >
               <Heart className="h-4 w-4" />
               Favoritos
+            </Link>
+          }
+        />
+        <DropdownMenuItem
+          render={
+            <Link href="/diario" className="flex items-center gap-2 cursor-pointer">
+              <NotebookPen className="h-4 w-4" />
+              Diario
+            </Link>
+          }
+        />
+        <DropdownMenuItem
+          render={
+            <Link href="/oracion" className="flex items-center gap-2 cursor-pointer">
+              <HandHeart className="h-4 w-4" />
+              Oración
             </Link>
           }
         />

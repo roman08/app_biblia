@@ -118,6 +118,16 @@ Las escrituras pasan por Server Actions en `lib/supabase/*-actions.ts` (`"use se
   - avance de la Biblia por testamento, género y libro (`BibleProgress`).
 - **Sin la migración:** si `chapter_reads` no existe, todo degrada sin romperse.
 
+### Diario (`/diario`) y oración (`/oracion`)
+
+- **Diario:** `journal_entries`, una entrada por usuario y día local (`unique(user_id, entry_date)`).
+  - `JournalEditor` guarda solo, 1 s después de dejar de escribir, con `saveJournalEntry` (upsert). Si el texto queda vacío, borra la entrada. Va montado con `key={date}`: al cambiar de día guarda lo pendiente.
+  - No revalida en cada guardado: hace `router.refresh()` solo cuando la entrada aparece o desaparece, para el calendario.
+  - Navegación con `?fecha=YYYY-MM-DD` y `?mes=YYYY-MM`. Desde el lector se entra con `?libro=juan&cap=3`.
+  - Sugiere la lectura del plan con `getTodayReading()` de `plans-actions`.
+- **Oración:** `prayer_requests`; las respondidas tienen `answered_at` y `answer_note`. Las acciones están en `lib/supabase/prayer-actions.ts` y devuelven `{ ok, error }` en lugar de lanzar.
+- **Migración:** `supabase/migrations/20261004120000_journal_and_prayer.sql`.
+
 ### Push notifications y recordatorios inteligentes
 
 1. **Cliente:** `lib/hooks/use-push-notifications.ts` suscribe con la VAPID key y guarda en `push_subscriptions` la suscripción, `reminder_hour` y `timezone` del dispositivo. La UI, con el selector de hora, está en `components/profile/PushNotificationToggle.tsx`.
@@ -133,7 +143,7 @@ En localhost no llegan notificaciones; hace falta HTTPS real.
 
 ## 🗄️ Base de Datos (Supabase, RLS siempre activo)
 
-Tablas: `profiles`, `reading_plans` y `plan_days` (catálogo público), `user_plans`, `notes`, `favorite_verses`, `reading_activity`, `chapter_reads`, `push_subscriptions`.
+Tablas: `profiles`, `reading_plans` y `plan_days` (catálogo público), `user_plans`, `notes`, `favorite_verses`, `reading_activity`, `chapter_reads`, `push_subscriptions`, `journal_entries`, `prayer_requests`.
 
 - `notes`: en los resaltados, `verse` no puede ser null.
 - `reading_activity`: una fila por usuario/día; se incrementa `chapters_read` y de ahí sale la racha.

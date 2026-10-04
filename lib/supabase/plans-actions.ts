@@ -78,6 +78,52 @@ export async function getUserPlan(planId: string): Promise<UserPlan | null> {
   return data as UserPlan | null;
 }
 
+export interface TodayReading {
+  planSlug: string;
+  planName: string;
+  day: number;
+  passages: Array<{ book: string; chapter: number }>;
+}
+
+/**
+ * Lo que le toca leer hoy al usuario en su plan activo (el último que empezó):
+ * el día siguiente al último completado. null sin sesión, sin plan o si ya
+ * terminó el plan.
+ */
+export async function getTodayReading(): Promise<TodayReading | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: userPlan } = await supabase
+    .from("user_plans")
+    .select("completed_days, reading_plans(id, slug, name, total_days)")
+    .eq("user_id", user.id)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const plan = (userPlan as { reading_plans?: { id: string; slug: string; name: string; total_days: number } } | null)
+    ?.reading_plans;
+  if (!userPlan || !plan) return null;
+
+  const completed = (userPlan.completed_days as number[] | null) ?? [];
+  if (completed.length >= plan.total_days) return null;
+  const day = Math.min(completed.length ? Math.max(...completed) + 1 : 1, plan.total_days);
+
+  const { data: planDay } = await supabase
+    .from("plan_days")
+    .select("passages")
+    .eq("plan_id", plan.id)
+    .eq("day_number", day)
+    .maybeSingle();
+  if (!planDay?.passages?.length) return null;
+
+  return { planSlug: plan.slug, planName: plan.name, day, passages: planDay.passages };
+}
+
 export async function startPlan(planId: string) {
   const supabase = await createClient();
   const {

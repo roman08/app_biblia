@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { pageMetadata, truncate } from "@/lib/site";
 import Link from "next/link";
+import { NotebookPen } from "lucide-react";
 import { Suspense } from "react";
 import {
   getChapter,
@@ -144,6 +145,17 @@ export default async function ChapterPage({ params, searchParams }: PageProps) {
             versionShortName={versionLabel(data.version).shortName}
             isAuthenticated={!!user}
           />
+
+          {/* Llevar el capítulo al diario */}
+          {user && (
+            <Link
+              href={`/diario?libro=${bookSlug}&cap=${chapter}`}
+              className="mt-8 flex min-h-11 items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <NotebookPen className="h-4 w-4" aria-hidden="true" />
+              Escribir una reflexión sobre {book.name} {chapter}
+            </Link>
+          )}
 
           {/* Aviso de derechos de la versión (lo exigen la RVG y la ONBV) */}
           {data.copyright && (

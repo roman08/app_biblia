@@ -16,6 +16,9 @@ import {
   BookMarked,
   StickyNote,
   BarChart3,
+  NotebookPen,
+  HandHeart,
+  Heart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
@@ -27,7 +30,10 @@ export const metadata: Metadata = {
 
 const QUICK_LINKS = [
   { href: "/planes", label: "Planes", hint: "Lecturas guiadas", icon: BookMarked },
+  { href: "/diario", label: "Diario", hint: "Tu reflexión", icon: NotebookPen },
+  { href: "/oracion", label: "Oración", hint: "Tus peticiones", icon: HandHeart },
   { href: "/notas", label: "Notas", hint: "Resaltados", icon: StickyNote },
+  { href: "/favoritos", label: "Favoritos", hint: "Versículos", icon: Heart },
   { href: "/estadisticas", label: "Estadísticas", hint: "Tu progreso", icon: BarChart3 },
 ];
 
