@@ -144,12 +144,16 @@ export function JournalEditor({
             <Button
               variant="outline"
               size="sm"
-              className="h-9 gap-1.5 rounded-full"
+              // Puede ser largo (3–4 pasajes): debe poder partirse en líneas,
+              // si no, desborda la pantalla y genera scroll horizontal
+              className="h-auto min-h-9 max-w-full gap-1.5 whitespace-normal rounded-2xl py-1.5 text-left"
               onClick={() => setPassagesDirty([...passages, ...missingSuggested])}
             >
-              <Plus className="h-3.5 w-3.5" />
-              <BookOpen className="h-3.5 w-3.5" />
-              Lectura de hoy: {missingSuggested.map((p) => `${bookName(p.book)} ${p.chapter}`).join(", ")}
+              <Plus className="h-3.5 w-3.5 shrink-0" />
+              <BookOpen className="h-3.5 w-3.5 shrink-0" />
+              <span className="min-w-0">
+                Lectura de hoy: {missingSuggested.map((p) => `${bookName(p.book)} ${p.chapter}`).join(", ")}
+              </span>
             </Button>
           )}
         </div>
