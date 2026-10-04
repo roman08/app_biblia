@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Biblia App**: webapp (PWA) para leer y estudiar la Biblia. Lector con Reina-Valera Gómez 2010 (RVG) por defecto, planes de lectura, notas/resaltados, favoritos, racha de lectura, compartir versículos como imagen y recordatorios push.
 
-Pendiente: deploy a Vercel (prioridad alta), buscador de versículos (aún no existe `app/buscar/` ni un parser de referencias), onboarding.
+Publicada en Netlify (`app-bibllia.netlify.app`, deploy automático al hacer push a `main`). Pendiente: búsqueda por palabra, onboarding, recordatorios inteligentes.
 
 ## ⚠️ Next.js 16 — leer antes de escribir código
 
@@ -24,7 +24,8 @@ npm run dev      # next dev --webpack  (localhost:3000)
 npm run build    # next build --webpack
 npm start
 npm run lint     # eslint (flat config en eslint.config.mjs)
-npx tsx scripts/generate-plan.ts   # genera un plan de lectura
+npx tsx scripts/generate-balanced-plan.ts  # plan "Biblia en un año" (3-4 lecturas/día); simula, --write guarda
+npx tsx scripts/delete-plan.ts <slug> [--move-to <slug>] [--write]  # borra un plan (no si alguien tiene progreso)
 npx tsx scripts/import-plan.ts     # importa un plan (mapea nombres de libros en inglés a slugs)
 npx tsx scripts/validate-books.ts  # valida BOOKS, géneros y cada lectura de los planes en Supabase
 ```
@@ -54,6 +55,15 @@ Variables de entorno (`.env.local`): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SU
 - **Aviso de derechos:** `ChapterData.copyright` (de `meta.copyright`) se muestra al final del capítulo y en `/v`. Es obligatorio: la RVG solo permite uso gratuito, sin fines de lucro y sin cambiar palabras, y la ONBV es CC BY-SA y exige atribución. Si la app cobra o tiene anuncios, la RVG requiere permiso de su autor.
 - Midvash devuelve `book` y `bookName` en inglés ("john", "John"). Muestra siempre `getBook(slug).name`; `getChapter()` ya lo hace.
 - Para varios versículos sueltos usa `getPassages()` (`/v1/passages`, 50 referencias por llamada), no un `getChapter` por versículo. Midvash no tiene búsqueda por texto.
+
+### Buscador (`/buscar`)
+
+- **Parser:** [lib/parse-reference.ts](lib/parse-reference.ts) convierte texto en una referencia: "jn 3:16", "1 co 13:4-7", "Primera de Juan 4,8", "sal 23". Funciona sin red; las abreviaturas están en `ALIASES`.
+- **Libros de un solo capítulo:** "Judas 3" se interpreta como el versículo 3.
+- **Nombres ambiguos:** "corintios", "jo" devuelven `candidates`.
+- **Vista previa:** el texto lo trae la server action `getReferencePreview` ([lib/search-actions.ts](lib/search-actions.ts)).
+- **Enlace directo:** `/buscar?q=juan+3:16` redirige al lector.
+- Midvash no tiene búsqueda por texto; buscar por palabra requeriría indexar el texto en Supabase.
 
 ### Auth y sesión (Supabase SSR)
 
@@ -113,7 +123,9 @@ Tablas: `profiles`, `reading_plans` y `plan_days` (catálogo público), `user_pl
 
 - `notes`: en los resaltados, `verse` no puede ser null.
 - `reading_activity`: una fila por usuario/día; se incrementa `chapters_read` y de ahí sale la racha.
-- `user_plans.completed_days`: jsonb con un array de números de día.
+- `user_plans.completed_days`: jsonb con un array de números de día. Como el progreso se guarda por número de día, **no regeneres los días de un plan que ya tiene usuarios**: crea uno nuevo. Los scripts de planes se niegan a hacerlo.
+- Hoy existe un solo plan: `biblia-en-un-ano`. El anterior, `un-ano-4-lecturas`, se borró en oct. 2026 porque estaba desbalanceado.
+- **Página del plan** (`/plan/[slug]`): muestra un solo día a la vez (`PlanDaysList`) con flechas y un mapa de días por bloques de 31. No vuelvas a renderizar las 365 tarjetas.
 - La service role nunca se usa en código que llegue al cliente.
 - Los cambios de esquema van en `supabase/migrations/<timestamp>_<nombre>.sql`, con sus políticas RLS, y escritos de forma idempotente (`if not exists`). Se aplican con `npx supabase db push`.
 - `favorite_verses` tiene un índice único `(user_id, book, chapter, verse)`.
@@ -137,7 +149,7 @@ Design system:
 
 - Light: primary `#1E3A8A`, accent `#D4A574`, bg `#F8FAFC`.
 - Dark: primary `#3B82F6`, accent `#D4A574`, bg `#0F172A`.
-- Fuentes: Geist y Geist Mono para la UI; Georgia para el texto del lector.
+- Fuentes: Geist y Geist Mono para la UI; Georgia (`font-serif`) para el texto del lector. Las variables de `next/font` (`--font-geist-sans`) van en `<html>`, no en `<body>`: `font-sans` se aplica en `html` y, si la variable no existe ahí, toda la interfaz cae en la serif del navegador.
 
 ## 🐛 Problemas Conocidos
 

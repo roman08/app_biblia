@@ -11,6 +11,9 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { TimezoneSync } from "@/components/providers/TimezoneSync";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Toaster } from "@/components/ui/sonner";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Search } from "lucide-react";
 import { OG_DEFAULTS, SITE_DESCRIPTION, SITE_NAME, getSiteUrl } from "@/lib/site";
 
 const geistSans = Geist({
@@ -83,15 +86,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning data-scroll-behavior="smooth">
+    // Las variables de fuente van en <html>: ahí se aplica font-sans
+    // (globals.css). En <body> la variable no existía para <html> y toda la
+    // interfaz caía en la serif por defecto del navegador.
+    <html
+      lang="es"
+      suppressHydrationWarning
+      data-scroll-behavior="smooth"
+      className={`${geistSans.variable} ${geistMono.variable}`}
+    >
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Biblia" />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <ThemeProvider>
           <TimezoneSync />
           <PWAInstallPrompt />
@@ -113,7 +122,16 @@ export default function RootLayout({
                 Biblia
               </Link>
 
-              <div className="shrink-0">
+              <div className="flex shrink-0 items-center">
+                {/* Enlace con estilo de botón (es navegación, no una acción) */}
+                <Link
+                  href="/buscar"
+                  className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-10 w-10")}
+                  aria-label="Buscar en la Biblia"
+                  title="Buscar"
+                >
+                  <Search className="h-5 w-5" />
+                </Link>
                 <ThemeToggle />
                 <UserNav />
               </div>

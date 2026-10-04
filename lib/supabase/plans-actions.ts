@@ -44,10 +44,7 @@ export async function getPlanBySlug(slug: string) {
     .eq("slug", slug)
     .maybeSingle();
 
-  console.log("🔍 getPlanBySlug → slug:", slug);
-  console.log("🔍 getPlanBySlug → plan:", plan);
-  console.log("🔍 getPlanBySlug → planError:", planError);
-
+  if (planError) console.error("getPlanBySlug:", planError.message);
   if (!plan) return null;
 
   const { data: days, error: daysError } = await supabase
@@ -56,8 +53,7 @@ export async function getPlanBySlug(slug: string) {
     .eq("plan_id", plan.id)
     .order("day_number", { ascending: true });
 
-  console.log("🔍 getPlanBySlug → days count:", days?.length);
-  console.log("🔍 getPlanBySlug → daysError:", daysError);
+  if (daysError) console.error("getPlanBySlug (días):", daysError.message);
 
   return {
     plan: plan as ReadingPlan,
@@ -134,5 +130,7 @@ export async function toggleDayCompleted(planId: string, dayNumber: number) {
     .update({ completed_days: newCompleted })
     .eq("id", userPlan.id);
 
-  revalidatePath("/plan");
+  // Páginas de planes (/plan/[slug]) y la tarjeta "Plan activo" del inicio
+  revalidatePath("/plan", "layout");
+  revalidatePath("/");
 }

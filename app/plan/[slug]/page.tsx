@@ -50,8 +50,11 @@ export default async function PlanPage({ params }: PageProps) {
   const userPlan = user ? await getUserPlan(plan.id) : null;
   const completed = userPlan?.completed_days ?? [];
 
-  const currentDayNumber =
-    completed.length > 0 ? Math.max(...completed) + 1 : 1;
+  // El siguiente al último leído (sin pasar del último día del plan)
+  const currentDayNumber = Math.min(
+    completed.length > 0 ? Math.max(...completed) + 1 : 1,
+    plan.total_days
+  );
 
   async function handleStart() {
     "use server";
@@ -115,6 +118,7 @@ export default async function PlanPage({ params }: PageProps) {
         days={days}
         completedDays={completed}
         currentDayNumber={currentDayNumber}
+        canToggle={!!userPlan}
       />
     </div>
   );

@@ -108,9 +108,6 @@ function validateCategories() {
 // ─── 4. Planes en Supabase ──────────────────────────────────────────────
 interface Passage { book: string; chapter: number }
 
-// Etiquetas que usaba PlanDayCard antes (por posición), solo para el informe
-const OLD_POSITION_LABELS: Array<"OT" | "NT"> = ["OT", "OT", "NT", "OT"];
-
 async function validatePlans() {
   console.log("\n4. Planes de lectura en Supabase");
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -151,12 +148,10 @@ async function validatePlans() {
     // Lecturas
     const count = new Map<string, number>();
     let passages = 0;
-    let oldLabelWrong = 0;
-    const oldWrongExamples: string[] = [];
     const perDay = new Map<number, number>();
     for (const day of days) {
       perDay.set(day.passages.length, (perDay.get(day.passages.length) ?? 0) + 1);
-      day.passages.forEach((p, i) => {
+      day.passages.forEach((p) => {
         passages++;
         const book = BOOKS.find((b) => b.slug === p.book);
         if (!book) return fail(`día ${day.day_number}: libro desconocido "${p.book}"`);
@@ -165,12 +160,6 @@ async function validatePlans() {
         const tag = getBookTag(p.book);
         if (tag?.testament !== book.testament)
           fail(`día ${day.day_number}: ${book.name} etiquetado ${tag?.testament}`);
-        const old = OLD_POSITION_LABELS[i] ?? "OT";
-        if (old !== book.testament) {
-          oldLabelWrong++;
-          if (oldWrongExamples.length < 4)
-            oldWrongExamples.push(`día ${day.day_number}: ${book.name} ${p.chapter} decía ${old === "OT" ? "AT" : "NT"}`);
-        }
         const k = `${p.book} ${p.chapter}`;
         count.set(k, (count.get(k) ?? 0) + 1);
       });
@@ -197,7 +186,6 @@ async function validatePlans() {
     );
     if (repeated.length)
       console.log(`    ⚠ ${repeated.length} capítulos repetidos (sin contar Salmos): ${repeated.slice(0, 8).join(", ")}${repeated.length > 8 ? "…" : ""}`);
-    console.log(`    (antes de la corrección, ${oldLabelWrong} de ${passages} lecturas tenían el testamento mal: ${oldWrongExamples.join("; ")})`);
   }
 }
 
