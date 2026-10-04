@@ -51,6 +51,11 @@
   --color-tag-purple: var(--tag-purple);
   --color-tag-blue: var(--tag-blue);
   --color-tag-green: var(--tag-green);
+  --color-heat-0: var(--heat-0);
+  --color-heat-1: var(--heat-1);
+  --color-heat-2: var(--heat-2);
+  --color-heat-3: var(--heat-3);
+  --color-heat-4: var(--heat-4);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -115,6 +120,13 @@
   --tag-purple: #7E22CE;
   --tag-blue: #1D4ED8;
   --tag-green: #15803D;
+  /* Mapa de calor (una sola tonalidad, claro → oscuro = poco → mucho).
+     Validado con dataviz/validate_palette.js --ordinal sobre #FFFFFF. */
+  --heat-0: #E2E8F0;
+  --heat-1: #86B6EF;
+  --heat-2: #3987E5;
+  --heat-3: #1C5CAB;
+  --heat-4: #0D366B;
 }
 
 .dark {
@@ -169,6 +181,13 @@
   --tag-purple: #C084FC;
   --tag-blue: #60A5FA;
   --tag-green: #4ADE80;
+  /* Mapa de calor: sobre fondo oscuro, más lectura = más claro.
+     Validado con --ordinal sobre #1E293B. */
+  --heat-0: #334155;
+  --heat-1: #2A78D6;
+  --heat-2: #5598E7;
+  --heat-3: #86B6EF;
+  --heat-4: #CDE2FB;
 }
 
 /* Safe areas para iPhone con notch */

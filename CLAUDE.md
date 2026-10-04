@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Biblia App**: webapp (PWA) para leer y estudiar la Biblia. Lector con Reina-Valera Gómez 2010 (RVG) por defecto, planes de lectura, notas/resaltados, favoritos, racha de lectura, compartir versículos como imagen y recordatorios push.
 
-Publicada en Netlify (`app-bibllia.netlify.app`, deploy automático al hacer push a `main`). Pendiente: búsqueda por palabra, onboarding, recordatorios inteligentes.
+Publicada en Netlify (`app-bibllia.netlify.app`, deploy automático al hacer push a `main`). Los archivos que genera next-pwa en `public/` están en `.gitignore`. Pendiente: búsqueda por palabra, onboarding, comparar versiones.
 
 ## ⚠️ Next.js 16 — leer antes de escribir código
 
@@ -109,17 +109,31 @@ Las escrituras pasan por Server Actions en `lib/supabase/*-actions.ts` (`"use se
 - **`ownImage`:** si el segmento tiene su propio `opengraph-image.tsx`, pasa `ownImage: true`. La clave `images` tiene que faltar del todo: tanto `images: [...]` como `images: undefined` le ganan al archivo.
 - **Proxy:** `proxy.ts` excluye `opengraph-image` de su `matcher`, así que esas peticiones no pasan por la sesión de Supabase.
 
-### Push notifications (tres piezas)
+### Progreso y racha
 
-1. Cliente: `lib/hooks/use-push-notifications.ts` suscribe con la VAPID key y guarda en `push_subscriptions`. La UI está en `components/profile/PushNotificationToggle.tsx`.
-2. Service worker: [worker/index.js](worker/index.js) se inyecta en el `sw.js` generado por next-pwa (`customWorkerSrc: "worker"`) y maneja `push` y `notificationclick`.
-3. Envío: la edge function de Supabase `supabase/functions/send-notifications/` (Deno) implementa Web Push con cifrado manual y usa la service role.
+- **Cuándo cuenta un capítulo:** `ReadingTracker` lo registra al llegar al último versículo o tras 30 s en la página, lo que pase primero. Llama a `recordChapterRead` → función SQL `record_chapter_read`.
+- **Qué guarda:** el capítulo en `chapter_reads`. Suma a `reading_activity` (la racha) solo la primera vez que se lee ese capítulo en el día, así que recargar no infla nada.
+- **`/estadisticas`:**
+  - mapa de calor de 26 semanas (`ActivityHeatmap`, tokens `--heat-0…4` validados con la skill dataviz);
+  - avance de la Biblia por testamento, género y libro (`BibleProgress`).
+- **Sin la migración:** si `chapter_reads` no existe, todo degrada sin romperse.
+
+### Push notifications y recordatorios inteligentes
+
+1. **Cliente:** `lib/hooks/use-push-notifications.ts` suscribe con la VAPID key y guarda en `push_subscriptions` la suscripción, `reminder_hour` y `timezone` del dispositivo. La UI, con el selector de hora, está en `components/profile/PushNotificationToggle.tsx`.
+2. **Service worker:** [worker/index.js](worker/index.js) se inyecta en el `sw.js` generado por next-pwa (`customWorkerSrc: "worker"`) y maneja `push` y `notificationclick`.
+3. **Envío:** la edge function `supabase/functions/send-notifications/` (Deno) implementa Web Push con cifrado manual y usa la service role.
+   - **Cuándo envía:** pg_cron la llama cada hora en punto (`supabase/cron/send-reminders.sql`). Envía solo si es la `reminder_hour` local del usuario, si `last_notified_at` no es de hoy (en su fecha local) y si hoy no ha leído.
+   - **Qué dice:** "Día N de tu plan: …" y la racha.
+   - **Probar sin esperar:** `POST ?force=1` envía ya a todos.
+   - **Lógica pura y probable sin Deno:** `reminder.ts`. Sus nombres de libros deben coincidir con `BOOKS`.
+   - **Desplegar:** `npx supabase functions deploy send-notifications --no-verify-jwt`.
 
 En localhost no llegan notificaciones; hace falta HTTPS real.
 
 ## 🗄️ Base de Datos (Supabase, RLS siempre activo)
 
-Tablas: `profiles`, `reading_plans` y `plan_days` (catálogo público), `user_plans`, `notes`, `favorite_verses`, `reading_activity`, `push_subscriptions`.
+Tablas: `profiles`, `reading_plans` y `plan_days` (catálogo público), `user_plans`, `notes`, `favorite_verses`, `reading_activity`, `chapter_reads`, `push_subscriptions`.
 
 - `notes`: en los resaltados, `verse` no puede ser null.
 - `reading_activity`: una fila por usuario/día; se incrementa `chapters_read` y de ahí sale la racha.

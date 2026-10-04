@@ -130,6 +130,7 @@ export default async function ChapterPage({ params, searchParams }: PageProps) {
             book={bookSlug}
             bookName={book.name}
             chapter={chapter}
+            lastVerse={data.verses.length}
             isAuthenticated={!!user}
           />
 

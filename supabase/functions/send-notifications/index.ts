@@ -1,4 +1,13 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  addDays,
+  buildMessage,
+  isDue,
+  localParts,
+  streakUntilYesterday,
+  type MessageInput,
+  type Passage,
+} from "./reminder.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -260,15 +269,76 @@ async function sendPushNotification(
 // SERVIDOR
 // ============================================
 
+// El cron (pg_cron) llama a esta función cada hora en punto. A cada
+// suscripción se le envía el recordatorio solo si:
+//   1. es la hora que eligió el usuario, en su zona horaria;
+//   2. hoy (su fecha local) todavía no se le envió nada;
+//   3. hoy todavía no ha leído.
+// El mensaje dice qué le toca de su plan y cuántos días lleva de racha.
+//
+// Prueba manual: POST ?force=1 envía ya a todas las suscripciones, sin mirar
+// la hora ni si ya leyó, y sin marcar el envío del día.
+
+interface UserContext {
+  readToday: boolean;
+  streak: number;
+  plan: MessageInput["plan"];
+}
+
+async function loadUserContext(userId: string, today: string): Promise<UserContext> {
+  // Días con lectura (para "ya leyó hoy" y la racha)
+  const { data: activity } = await supabase
+    .from("reading_activity")
+    .select("activity_date")
+    .eq("user_id", userId)
+    .gte("activity_date", addDays(today, -400));
+  const readDates = new Set((activity ?? []).map((a) => a.activity_date as string));
+
+  // Plan activo: el último que empezó
+  let plan: MessageInput["plan"] = null;
+  const { data: userPlan } = await supabase
+    .from("user_plans")
+    .select("completed_days, reading_plans(id, slug, name, total_days)")
+    .eq("user_id", userId)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  // deno-lint-ignore no-explicit-any
+  const info = (userPlan as any)?.reading_plans;
+  if (info) {
+    const completed: number[] = userPlan?.completed_days ?? [];
+    const day = Math.min(completed.length ? Math.max(...completed) + 1 : 1, info.total_days);
+    const { data: planDay } = await supabase
+      .from("plan_days")
+      .select("passages")
+      .eq("plan_id", info.id)
+      .eq("day_number", day)
+      .maybeSingle();
+    if (planDay?.passages?.length && completed.length < info.total_days) {
+      plan = { slug: info.slug, name: info.name, day, passages: planDay.passages as Passage[] };
+    }
+  }
+
+  return {
+    readToday: readDates.has(today),
+    streak: streakUntilYesterday(readDates, today),
+    plan,
+  };
+}
+
 Deno.serve(async (req) => {
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${Deno.env.get("CRON_SECRET")}`) {
     return new Response("Unauthorized", { status: 401 });
   }
 
+  const force = new URL(req.url).searchParams.get("force") === "1";
+  const now = new Date();
+
   const { data: subs, error } = await supabase
     .from("push_subscriptions")
-    .select("*");
+    .select("id, user_id, subscription, reminder_hour, timezone, last_notified_at");
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
@@ -277,23 +347,35 @@ Deno.serve(async (req) => {
     });
   }
 
-  if (!subs || subs.length === 0) {
-    return new Response(JSON.stringify({ total: 0, sent: 0 }), {
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  // Suscripciones a las que toca enviar ahora
+  const due = (subs ?? []).filter(
+    (s) =>
+      force ||
+      isDue({
+        now,
+        timeZone: s.timezone,
+        reminderHour: s.reminder_hour,
+        lastNotifiedAt: s.last_notified_at,
+      })
+  );
 
-  const payload = JSON.stringify({
-    title: "📖 Biblia App",
-    body: "Es hora de leer. ¿Continuamos con tu plan?",
-    url: "/",
-    tag: "daily-reminder",
-  });
+  // Contexto por usuario (un usuario puede tener varios dispositivos)
+  const contexts = new Map<string, Promise<UserContext>>();
+  const contextFor = (userId: string, today: string) => {
+    const key = `${userId}:${today}`;
+    if (!contexts.has(key)) contexts.set(key, loadUserContext(userId, today));
+    return contexts.get(key)!;
+  };
 
   const results = await Promise.allSettled(
-    subs.map(async (sub) => {
+    due.map(async (sub) => {
       try {
-        const response = await sendPushNotification(sub.subscription, payload);
+        const today = localParts(now, sub.timezone).date;
+        const ctx = await contextFor(sub.user_id, today);
+        if (ctx.readToday && !force) return { id: sub.id, status: "skipped", reason: "ya leyó hoy" };
+
+        const message = buildMessage({ streak: ctx.streak, plan: ctx.plan });
+        const response = await sendPushNotification(sub.subscription, JSON.stringify(message));
 
         if (!response.ok) {
           if (response.status === 410 || response.status === 404) {
@@ -303,24 +385,28 @@ Deno.serve(async (req) => {
           throw new Error(`Push failed: ${response.status} - ${errorText}`);
         }
 
-        return { id: sub.id, status: "sent" };
-      } catch (err: any) {
-        return { id: sub.id, status: "failed", error: err.message };
+        if (!force) {
+          await supabase
+            .from("push_subscriptions")
+            .update({ last_notified_at: now.toISOString() })
+            .eq("id", sub.id);
+        }
+        return { id: sub.id, status: "sent", title: message.title, body: message.body };
+      } catch (err) {
+        return { id: sub.id, status: "failed", error: (err as Error).message };
       }
     })
   );
 
-  const sent = results.filter(
-    (r) => r.status === "fulfilled" && r.value.status === "sent"
-  ).length;
-
+  const values = results.map((r) => (r.status === "fulfilled" ? r.value : { status: "failed" }));
   return new Response(
     JSON.stringify({
-      total: subs.length,
-      sent,
-      results: results.map((r) =>
-        r.status === "fulfilled" ? r.value : { status: "failed" }
-      ),
+      total: subs?.length ?? 0,
+      due: due.length,
+      sent: values.filter((v) => v.status === "sent").length,
+      skipped: values.filter((v) => v.status === "skipped").length,
+      force,
+      results: values,
     }),
     { headers: { "Content-Type": "application/json" } }
   );

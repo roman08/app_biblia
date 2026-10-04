@@ -41,3 +41,15 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# PWA: archivos que genera @ducanh2912/next-pwa en cada build (Netlify los genera en el suyo)
+/public/sw.js
+/public/sw.js.map
+/public/workbox-*.js
+/public/workbox-*.js.map
+/public/swe-worker-*.js
+/public/worker-*.js
+/public/fallback-*.js
+
+# Supabase CLI (estado local)
+/supabase/.temp/
